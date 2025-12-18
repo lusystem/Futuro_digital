@@ -1,0 +1,41 @@
+# Virtual environment
+.venv/
+venv/
+env/
+# or simply ignore all directories starting with a dot, if you are consistent
+# .*/
+
+venv/
+__pycache__/
+.env
+*.pyc
+
+# Python-specific files
+__pycache__/
+*.pyc
+*.pyd
+*.pyo
+*.egg-info/
+build/
+dist/
+
+# Flask instance folder (contains local data and configs not in version control)
+instance/
+
+# Testing and coverage
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Editor/IDE specific files (e.g., VS Code, PyCharm)
+.vscode/
+.idea/
+
+# Secret/sensitive files (ensure these are handled by environment variables or similar)
+.env
+*.key
+*.secret
+
+# Operating System files
+.DS_Store # macOS
+Thumbs.db # Windows
