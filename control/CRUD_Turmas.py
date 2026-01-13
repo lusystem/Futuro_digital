@@ -1,12 +1,9 @@
-#CRUD de turmas inicial
-#Conectado ao banco de dados PostgreSQL
 from flask import Flask, Blueprint, request, jsonify
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
 
 turma_bp = Blueprint('turma', __name__, url_prefix = '/turmas')
-
 
 #Cadastrar uma nova turma
 @turma_bp.route('/cadastrar', methods=['POST'])
@@ -67,10 +64,12 @@ def atualizar(id):
 #Deletar uma turma existente
 @turma_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
-    sql = text("DELETE FROM turmas WHERE id_turma = :id")
+    sql_alunos = text("DELETE FROM alunos WHERE id_turma = :id")
+    sql_turmas = text("DELETE FROM turmas WHERE id_turma = :id")
     dados = {'id': id}
     try:
-        db.session.execute(sql, dados)
+        db.session.execute(sql_alunos, dados)
+        db.session.execute(sql_turmas, dados)
         db.session.commit()
         return {'mensagem': 'Turma deletada com sucesso'}, 200
     except Exception as e:

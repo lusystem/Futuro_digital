@@ -15,7 +15,7 @@ def login():
     
     #verificar se esta no banco de dados
     sql = text("""
-               SELECT id, nome_usuario, email, cargo, id_escola
+               SELECT id_usuario, nome_usuario, email, cargo, id_escola
                FROM usuarios
                WHERE email = :email AND senha = :senha
                """)
@@ -31,7 +31,7 @@ def login():
             return {'erro': 'Credenciais inválidas.'}, 401
         
         usuario_dict = {
-            'id': usuario[0],
+            'id_usuario': usuario[0],
             'nome_usuario': usuario[1],
             'email': usuario[2],
             'cargo': usuario[3],

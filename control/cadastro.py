@@ -20,7 +20,7 @@ def cadastro():
     sql = text("""
                INSERT INTO usuarios( nome_usuario, email, senha, cargo, id_escola)
                VALUES (:nome_usuario, :email, :senha, :cargo, :id_escola)
-               RETURNING id
+               RETURNING id_usuario
                """)
     dados = {
         'nome_usuario': nome_usuario,
@@ -34,7 +34,7 @@ def cadastro():
         result = db.session.execute(sql, dados)
         db.session.commit()
         id_gerado = result.fetchone()[0]
-        dados['id'] = id_gerado
+        dados['id_usuario'] = id_gerado
         return dados, 201
     
     except Exception as e:

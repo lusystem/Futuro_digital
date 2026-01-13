@@ -1,4 +1,3 @@
-#CRUD inicial de alunos
 from flask import Flask, Blueprint, request, jsonify
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
@@ -10,10 +9,23 @@ aluno_bp = Blueprint('aluno', __name__, url_prefix = '/alunos')
 @aluno_bp.route('/cadastrar', methods=['POST'])
 def cadastrar(): 
     nome = request.form.get('nome')
-    pcd = request.form.get('pcd')
+    pcd = request.form.get('pcd') == 'true' #boolean no banco de dados
     idade = request.form.get('idade')
     descricao_flag = request.form.get('descricao_flag')
     id_turma = request.form.get('id_turma')
+
+    #validar campos obrigatórios
+    if not nome or not idade or not id_turma:
+        return {'erro': 'Nome, idade e id_turma são obrigatórios.'}, 400
+    
+    #validar se a turma existe
+    sql_turma = text("SELECT id_turma FROM turmas WHERE id_turma = :id_turma")
+    turma_dados = {'id_turma': id_turma}
+    turma_result = db.session.execute(sql_turma, turma_dados)
+    turma = turma_result.fetchone()
+    if not turma:
+        return {'erro': 'Turma não encontrada.'}, 404
+
     sql = text("""
                INSERT INTO alunos( nome, pcd, idade, descricao_flag, id_turma)
                VALUES (:nome, :pcd, :idade, :descricao_flag, :id_turma)
@@ -31,7 +43,7 @@ def cadastrar():
         result = db.session.execute(sql, dados)
         db.session.commit()
         id_gerado = result.fetchone()[0]
-        dados['id'] = id_gerado
+        dados['id_aluno'] = id_gerado
         return dados, 201
     except Exception as e:
         return {'erro': str(e)}, 400
@@ -40,7 +52,7 @@ def cadastrar():
 @aluno_bp.route('/<int:id>', methods=['PUT'])
 def atualizar(id):
     nome = request.form.get('nome')
-    pcd = request.form.get('pcd')
+    pcd = request.form.get('pcd') == 'true'  #boolean no banco de dados
     idade = request.form.get('idade')
     descricao_flag = request.form.get('descricao_flag')
     id_turma = request.form.get('id_turma')

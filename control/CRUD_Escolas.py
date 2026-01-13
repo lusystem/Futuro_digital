@@ -20,7 +20,7 @@ def cadastrar():
                capacidade_alunos, vagas, tipo)
                VALUES (:nome, :endereco, :quantidade_turmas, 
                :capacidade_alunos, :vagas, :tipo)
-               RETURNING id
+               RETURNING id_escola
                """)
     dados = {
         'nome': nome,
@@ -34,7 +34,7 @@ def cadastrar():
         result = db.session.execute(sql, dados)
         db.session.commit()
         id_gerado = result.fetchone()[0]
-        dados['id'] = id_gerado
+        dados['id_escola'] = id_gerado
         return dados, 201
     except Exception as e:
         return {'erro': str(e)}, 400
@@ -56,10 +56,10 @@ def atualizar(id):
                    capacidade_alunos = :capacidade_alunos,
                    vagas = :vagas,
                    tipo = :tipo
-               WHERE id = :id
+               WHERE id_escola = :id
                """)
     dados = {
-        'id': id,
+        'id_escola': id,
         'nome': nome,
         'endereco': endereco,
         'quantidade_turmas': quantidade_turmas,
@@ -77,8 +77,8 @@ def atualizar(id):
 #Deletar uma escola existente
 @escola_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
-    sql = text("DELETE FROM escolas WHERE id = :id")
-    dados = {'id': id}
+    sql = text("DELETE FROM escolas WHERE id_escola = :id")
+    dados = {'id_escola': id}
     try:
         db.session.execute(sql, dados)
         db.session.commit()
@@ -89,8 +89,8 @@ def deletar(id):
 #Ver escola especifica
 @escola_bp.route('/<int:id>', methods=['GET'])
 def ver(id):
-    sql = text("SELECT * FROM escolas WHERE id = :id")
-    dados = {'id': id}
+    sql = text("SELECT * FROM escolas WHERE id_escola = :id")
+    dados = {'id_escola': id}
     try:
         result = db.session.execute(sql, dados)
         escola = result.fetchone()

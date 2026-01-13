@@ -41,10 +41,7 @@ def atualizar(id):
 #Deletar um usuario existente
 @usuario_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
-    sql = text("""
-               DELETE FROM usuarios
-               WHERE id_usuario = :id
-               """)
+    sql = text("DELETE FROM usuarios WHERE id_usuario = :id")
     dados = {
         'id_usuario': id
     }
