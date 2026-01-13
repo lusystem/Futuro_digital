@@ -16,7 +16,7 @@ def cadastrar():
     capacidade_maxima = request.form.get('capacidade_maxima')
     id_escola = request.form.get('id_escola')
     sql = text("""
-               INSERT INTO turmas( nome, serie, capacidade_maxima, quantidade_alunos, id_escola)
+               INSERT INTO turmas( nome, serie, capacidade_maxima, id_escola)
                VALUES (:nome, :serie, :capacidade_maxima, :id_escola)
                RETURNING id
                """)

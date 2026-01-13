@@ -16,7 +16,7 @@ def cadastrar():
     id_turma = request.form.get('id_turma')
     sql = text("""
                INSERT INTO alunos( nome, pcd, idade, descricao_flag, id_turma)
-               VALUES (:nome, :idade, :descricao_flag, :id_turma)
+               VALUES (:nome, :pcd, :idade, :descricao_flag, :id_turma)
                RETURNING id
                """)
     dados = {

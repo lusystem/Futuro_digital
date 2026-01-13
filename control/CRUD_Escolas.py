@@ -17,7 +17,7 @@ def cadastrar():
     tipo = request.form.get('tipo')
     sql = text("""
                INSERT INTO escolas( nome, endereco, quantidade_turmas, 
-               "quantidade_alunos, capacidade_alunos, vagas, tipo)
+               capacidade_alunos, vagas, tipo)
                VALUES (:nome, :endereco, :quantidade_turmas, 
                :capacidade_alunos, :vagas, :tipo)
                RETURNING id
