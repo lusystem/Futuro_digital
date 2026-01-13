@@ -5,26 +5,25 @@ from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
 
 aluno_bp = Blueprint('aluno', __name__, url_prefix = '/alunos')
-app = Flask(__name__)
 
 #Cadastrar um novo aluno
-@app.route('/cadastrar', methods=['POST'])
+@aluno_bp.route('/cadastrar', methods=['POST'])
 def cadastrar():
     nome = request.form.get('nome')
-    flag = request.form.get('flag')
+    pcd = request.form.get('pcd')
     idade = request.form.get('idade')
-    serie = request.form.get('serie')
+    descricao_flag = request.form.get('descricao_flag')
     id_turma = request.form.get('id_turma')
     sql = text("""
-               INSERT INTO alunos( nome, flag, idade, serie, id_turma)
-               VALUES (:nome, :idade, :serie, :id_turma)
+               INSERT INTO alunos( nome, pcd, idade, descricao_flag, id_turma)
+               VALUES (:nome, :idade, :descricao_flag, :id_turma)
                RETURNING id
                """)
     dados = {
         'nome': nome,
-        'flag': flag,
+        'pcd': pcd,
         'idade': idade,
-        'serie': serie,
+        'descricao_flag': descricao_flag,
         'id_turma': id_turma
     }
     
@@ -38,28 +37,28 @@ def cadastrar():
         return {'erro': str(e)}, 400
 
 #Atualizar um aluno existente
-@app.route('/<int:id>', methods=['PUT'])
+@aluno_bp.route('/<int:id>', methods=['PUT'])
 def atualizar(id):
     nome = request.form.get('nome')
-    flag = request.form.get('flag')
+    pcd = request.form.get('pcd')
     idade = request.form.get('idade')
-    serie = request.form.get('serie')
+    descricao_flag = request.form.get('descricao_flag')
     id_turma = request.form.get('id_turma')
     sql = text("""
                UPDATE alunos
                SET nome = :nome,
-                   flag = :flag,
+                   pcd = :pcd,
                    idade = :idade,
-                   serie = :serie,
+                   descricao_flag = :descricao_flag,
                    id_turma = :id_turma
                WHERE id = :id
                """)
     dados = {
         'id': id,
         'nome': nome,
-        'flag': flag,
+        'pcd': pcd,
         'idade': idade,
-        'serie': serie,
+        'descricao_flag': descricao_flag,
         'id_turma': id_turma
     }
 
@@ -71,7 +70,7 @@ def atualizar(id):
         return {'erro': str(e)}, 400
 
 #Deletar um aluno existente
-@app.route('/<int:id>', methods=['DELETE'])
+@aluno_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
     sql = text("DELETE FROM alunos WHERE id = :id")
     dados = {'id': id}
@@ -84,7 +83,7 @@ def deletar(id):
         return {'erro': str(e)}, 400
 
 #Ver aluno especifico
-@app.route('/<int:id>', methods=['GET'])
+@aluno_bp.route('/<int:id>', methods=['GET'])
 def ver(id):
     sql = text("SELECT * FROM alunos WHERE id = :id")
     dados = {'id': id}
@@ -96,9 +95,9 @@ def ver(id):
             aluno_dict = {
                 'id': aluno[0],
                 'nome': aluno[1],
-                'flag': aluno[2],
+                'pcd': aluno[2],
                 'idade': aluno[3],
-                'serie': aluno[4],
+                'descricao_flag': aluno[4],
                 'id_turma': aluno[5]
             }
             return aluno_dict, 200
@@ -108,7 +107,7 @@ def ver(id):
         return {'erro': str(e)}, 400
 
 #Listar todos os alunos
-@app.route('/ver', methods=['GET'])
+@aluno_bp.route('/ver', methods=['GET'])
 def listar():
     sql = text("SELECT * FROM alunos")
 
@@ -120,15 +119,12 @@ def listar():
             aluno_dict = {
                 'id': aluno[0],
                 'nome': aluno[1],
-                'flag': aluno[2],
+                'pcd': aluno[2],
                 'idade': aluno[3],
-                'serie': aluno[4],
+                'descricao_flag': aluno[4],
                 'id_turma': aluno[5]
             }
             alunos_list.append(aluno_dict)
         return jsonify(alunos_list), 200
     except Exception as e:
         return {'erro': str(e)}, 400
-    
-if __name__ == "__main__":
-    app.run(debug=True)

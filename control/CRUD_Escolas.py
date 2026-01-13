@@ -1,5 +1,4 @@
 #CRUD inicial de escolas 
-#Conectado ao banco de dados PostgreSQL
 from flask import Flask, Blueprint, request, jsonify
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
@@ -7,15 +6,12 @@ from conf.database import db
 
 escola_bp = Blueprint('escola', __name__, url_prefix = '/escolas') 
 
-app = Flask(__name__)
-
 #Cadastrar uma nova escola
-@app.route('/cadastrar', methods=['POST'])
+@escola_bp.route('/cadastrar', methods=['POST'])
 def cadastrar():
     nome = request.form.get('nome')
     endereco = request.form.get('endereco')
     quantidade_turmas = request.form.get('quantidade_turmas')
-    quantidade_alunos = request.form.get('quantidade_alunos')
     capacidade_alunos = request.form.get('capacidade_alunos')
     vagas = request.form.get('vagas')
     tipo = request.form.get('tipo')
@@ -23,14 +19,13 @@ def cadastrar():
                INSERT INTO escolas( nome, endereco, quantidade_turmas, 
                "quantidade_alunos, capacidade_alunos, vagas, tipo)
                VALUES (:nome, :endereco, :quantidade_turmas, 
-               :quantidade_alunos, :capacidade_alunos, :vagas, :tipo)
+               :capacidade_alunos, :vagas, :tipo)
                RETURNING id
                """)
     dados = {
         'nome': nome,
         'endereco': endereco,
         'quantidade_turmas': quantidade_turmas,
-        'quantidade_alunos': quantidade_alunos,
         'capacidade_alunos': capacidade_alunos,
         'vagas': vagas,
         'tipo': tipo
@@ -45,12 +40,11 @@ def cadastrar():
         return {'erro': str(e)}, 400
     
 #Atualizar uma escola existente
-@app.route('/<int:id>', methods=['PUT'])
+@escola_bp.route('/<int:id>', methods=['PUT'])
 def atualizar(id):
     nome = request.form.get('nome')
     endereco = request.form.get('endereco')
     quantidade_turmas = request.form.get('quantidade_turmas')
-    quantidade_alunos = request.form.get('quantidade_alunos')
     capacidade_alunos = request.form.get('capacidade_alunos')
     vagas = request.form.get('vagas')
     tipo = request.form.get('tipo')
@@ -59,7 +53,6 @@ def atualizar(id):
                SET nome = :nome,
                    endereco = :endereco,
                    quantidade_turmas = :quantidade_turmas,
-                   quantidade_alunos = :quantidade_alunos,
                    capacidade_alunos = :capacidade_alunos,
                    vagas = :vagas,
                    tipo = :tipo
@@ -70,7 +63,6 @@ def atualizar(id):
         'nome': nome,
         'endereco': endereco,
         'quantidade_turmas': quantidade_turmas,
-        'quantidade_alunos': quantidade_alunos,
         'capacidade_alunos': capacidade_alunos,
         'vagas': vagas,
         'tipo': tipo
@@ -83,7 +75,7 @@ def atualizar(id):
         return {'erro': str(e)}, 400
 
 #Deletar uma escola existente
-@app.route('/<int:id>', methods=['DELETE'])
+@escola_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
     sql = text("DELETE FROM escolas WHERE id = :id")
     dados = {'id': id}
@@ -95,7 +87,7 @@ def deletar(id):
         return {'erro': str(e)}, 400
 
 #Ver escola especifica
-@app.route('/<int:id>', methods=['GET'])
+@escola_bp.route('/<int:id>', methods=['GET'])
 def ver(id):
     sql = text("SELECT * FROM escolas WHERE id = :id")
     dados = {'id': id}
@@ -111,7 +103,7 @@ def ver(id):
         return {'erro': str(e)}, 400
 
 #Listar todas as escolas
-@app.route('/ver', methods=['GET'])
+@escola_bp.route('/ver', methods=['GET'])
 def listar():
     sql = text("SELECT * FROM escolas")
     try:
@@ -120,6 +112,3 @@ def listar():
         return jsonify(escolas), 200
     except Exception as e:
         return {'erro': str(e)}, 400
-
-if __name__ == "__main__":
-    app.run(debug=True)

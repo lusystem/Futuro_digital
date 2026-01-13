@@ -7,26 +7,23 @@ from conf.database import db
 
 turma_bp = Blueprint('turma', __name__, url_prefix = '/turmas')
 
-app = Flask(__name__)
 
 #Cadastrar uma nova turma
-@app.route('/cadastrar', methods=['POST'])
+@turma_bp.route('/cadastrar', methods=['POST'])
 def cadastrar():
     nome = request.form.get('nome')
     serie = request.form.get('serie')
     capacidade_maxima = request.form.get('capacidade_maxima')
-    quantidade_alunos = request.form.get('quantidade_alunos')
     id_escola = request.form.get('id_escola')
     sql = text("""
                INSERT INTO turmas( nome, serie, capacidade_maxima, quantidade_alunos, id_escola)
-               VALUES (:nome, :serie, :capacidade_maxima, :quantidade_alunos :id_escola)
+               VALUES (:nome, :serie, :capacidade_maxima, :id_escola)
                RETURNING id
                """)
     dados = {
         'nome': nome,
         'serie': serie,
         'capacidade_maxima': capacidade_maxima,
-        'quantidade_alunos': quantidade_alunos,
         'id_escola': id_escola
     }
     try:
@@ -39,19 +36,17 @@ def cadastrar():
         return {'erro': str(e)}, 400
 
 #Atualizar uma turma existente
-@app.route('/<int:id>', methods=['PUT'])
+@turma_bp.route('/<int:id>', methods=['PUT'])
 def atualizar(id):
     nome = request.form.get('nome')
     serie = request.form.get('serie')
     capacidade_maxima = request.form.get('capacidade_maxima')
-    quantidade_alunos = request.form.get('quantidade_alunos')
     id_escola = request.form.get('id_escola')
     sql = text("""
                UPDATE turmas
                SET nome = :nome,
                    serie = :serie,
                    capacidade_maxima = :capacidade_maxima,
-                   quantidade_alunos = :quantidade_alunos,
                    id_escola = :id_escola
                WHERE id = :id
                """)
@@ -60,7 +55,6 @@ def atualizar(id):
         'nome': nome,
         'serie': serie,
         'capacidade_maxima': capacidade_maxima,
-        'quantidade_alunos': quantidade_alunos,
         'id_escola': id_escola
     }
     try:
@@ -71,7 +65,7 @@ def atualizar(id):
         return {'erro': str(e)}, 400
 
 #Deletar uma turma existente
-@app.route('/<int:id>', methods=['DELETE'])
+@turma_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
     sql = text("DELETE FROM turmas WHERE id = :id")
     dados = {'id': id}
@@ -83,7 +77,7 @@ def deletar(id):
         return {'erro': str(e)}, 400
 
 #Ver turma especifica
-@app.route('/<int:id>', methods=['GET'])
+@turma_bp.route('/<int:id>', methods=['GET'])
 def ver(id):
     sql = text("SELECT * FROM turmas WHERE id = :id")
     dados = {'id': id}
@@ -96,8 +90,7 @@ def ver(id):
                 'nome': turma[1],
                 'serie': turma[2],
                 'capacidade_maxima': turma[3],
-                'quantidade_alunos': turma[4],
-                'id_escola': turma[5]
+                'id_escola': turma[4]
             }
             return turma_dict, 200
         else:
@@ -106,7 +99,7 @@ def ver(id):
         return {'erro': str(e)}, 400
 
 #Listar todas as turmas
-@app.route('/ver', methods=['GET'])
+@turma_bp.route('/ver', methods=['GET'])
 def listar():
     sql = text("SELECT * FROM turmas")
     try:
@@ -119,13 +112,9 @@ def listar():
                 'nome': turma[1],
                 'serie': turma[2],
                 'capacidade_maxima': turma[3],
-                'quantidade_alunos': turma[4],
-                'id_escola': turma[5]
+                'id_escola': turma[4]
             }
             turmas_list.append(turma_dict)
         return jsonify(turmas_list), 200
     except Exception as e:
         return {'erro': str(e)}, 400
-
-if __name__ == "__main__":
-    app.run(debug=True)
