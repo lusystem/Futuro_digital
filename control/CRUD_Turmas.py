@@ -18,7 +18,7 @@ def cadastrar():
     sql = text("""
                INSERT INTO turmas( nome, serie, capacidade_maxima, id_escola)
                VALUES (:nome, :serie, :capacidade_maxima, :id_escola)
-               RETURNING id
+               RETURNING id_turma
                """)
     dados = {
         'nome': nome,
@@ -48,7 +48,7 @@ def atualizar(id):
                    serie = :serie,
                    capacidade_maxima = :capacidade_maxima,
                    id_escola = :id_escola
-               WHERE id = :id
+               WHERE id_turma = :id
                """)
     dados = {
         'id': id,
@@ -67,7 +67,7 @@ def atualizar(id):
 #Deletar uma turma existente
 @turma_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
-    sql = text("DELETE FROM turmas WHERE id = :id")
+    sql = text("DELETE FROM turmas WHERE id_turma = :id")
     dados = {'id': id}
     try:
         db.session.execute(sql, dados)
@@ -79,7 +79,7 @@ def deletar(id):
 #Ver turma especifica
 @turma_bp.route('/<int:id>', methods=['GET'])
 def ver(id):
-    sql = text("SELECT * FROM turmas WHERE id = :id")
+    sql = text("SELECT * FROM turmas WHERE id_turma = :id")
     dados = {'id': id}
     try:
         result = db.session.execute(sql, dados)

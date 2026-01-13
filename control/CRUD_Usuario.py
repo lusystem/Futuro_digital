@@ -21,10 +21,10 @@ def atualizar(id):
                    senha = :senha,
                    cargo = :cargo,
                    id_escola = :id_escola
-               WHERE id = :id
+               WHERE id_usuario = :id
                """)
     dados = {
-        'id': id,
+        'id_usuario': id,
         'nome_usuario': nome_usuario,
         'email': email,
         'senha': senha, #implementar hash de senha em produção
@@ -43,10 +43,10 @@ def atualizar(id):
 def deletar(id):
     sql = text("""
                DELETE FROM usuarios
-               WHERE id = :id
+               WHERE id_usuario = :id
                """)
     dados = {
-        'id': id
+        'id_usuario': id
     }
     try:
         db.session.execute(sql, dados)
@@ -59,7 +59,7 @@ def deletar(id):
 @usuario_bp.route('/', methods=['GET'])
 def listar():
     sql = text("""
-               SELECT id, nome_usuario, email, cargo, id_escola
+               SELECT id_usuario, nome_usuario, email, cargo, id_escola
                FROM usuarios
                """)
     try:
@@ -67,7 +67,7 @@ def listar():
         usuarios = []
         for row in result.fetchall():
             usuario_dict = {
-                'id': row[0],
+                'id_usuario': row[0],
                 'nome_usuario': row[1],
                 'email': row[2],
                 'cargo': row[3],
@@ -82,19 +82,19 @@ def listar():
 @usuario_bp.route('/<int:id>', methods=['GET'])
 def ver(id):
     sql = text("""
-               SELECT id, nome_usuario, email, cargo, id_escola
+               SELECT id_usuario, nome_usuario, email, cargo, id_escola
                FROM usuarios
-               WHERE id = :id
+               WHERE id_usuario = :id
                """)
     dados = {
-        'id': id
+        'id_usuario': id
     }
     try:
         result = db.session.execute(sql, dados)
         usuario = result.fetchone()
         if usuario:
             usuario_dict = {
-                'id': usuario[0],
+                'id_usuario': usuario[0],
                 'nome_usuario': usuario[1],
                 'email': usuario[2],
                 'cargo': usuario[3],

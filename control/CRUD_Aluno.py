@@ -8,7 +8,7 @@ aluno_bp = Blueprint('aluno', __name__, url_prefix = '/alunos')
 
 #Cadastrar um novo aluno
 @aluno_bp.route('/cadastrar', methods=['POST'])
-def cadastrar():
+def cadastrar(): 
     nome = request.form.get('nome')
     pcd = request.form.get('pcd')
     idade = request.form.get('idade')
@@ -17,7 +17,7 @@ def cadastrar():
     sql = text("""
                INSERT INTO alunos( nome, pcd, idade, descricao_flag, id_turma)
                VALUES (:nome, :pcd, :idade, :descricao_flag, :id_turma)
-               RETURNING id
+               RETURNING id_aluno
                """)
     dados = {
         'nome': nome,
@@ -51,7 +51,7 @@ def atualizar(id):
                    idade = :idade,
                    descricao_flag = :descricao_flag,
                    id_turma = :id_turma
-               WHERE id = :id
+               WHERE id_aluno = :id
                """)
     dados = {
         'id': id,
@@ -72,7 +72,7 @@ def atualizar(id):
 #Deletar um aluno existente
 @aluno_bp.route('/<int:id>', methods=['DELETE'])
 def deletar(id):
-    sql = text("DELETE FROM alunos WHERE id = :id")
+    sql = text("DELETE FROM alunos WHERE id_aluno = :id")
     dados = {'id': id}
 
     try:
@@ -85,7 +85,7 @@ def deletar(id):
 #Ver aluno especifico
 @aluno_bp.route('/<int:id>', methods=['GET'])
 def ver(id):
-    sql = text("SELECT * FROM alunos WHERE id = :id")
+    sql = text("SELECT * FROM alunos WHERE id_aluno = :id")
     dados = {'id': id}
 
     try:
