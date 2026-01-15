@@ -1,119 +1,124 @@
-from flask import Flask, Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify
 from sqlalchemy import text
-from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
 
-turma_bp = Blueprint('turma', __name__, url_prefix = '/turmas')
+turma_bp = Blueprint('turma', __name__, url_prefix='/turma')
 
-#Cadastrar uma nova turma
-@turma_bp.route('/cadastrar', methods=['POST'])
+@turma_bp.route('/criar', methods=['POST'])
 def cadastrar():
-    nome = request.form.get('nome')
-    serie = request.form.get('serie')
-    capacidade_maxima = request.form.get('capacidade_maxima')
-    id_escola = request.form.get('id_escola')
-    sql = text("""
-               INSERT INTO turmas( nome, serie, capacidade_maxima, id_escola)
-               VALUES (:nome, :serie, :capacidade_maxima, :id_escola)
-               RETURNING id_turma
-               """)
-    dados = {
-        'nome': nome,
-        'serie': serie,
-        'capacidade_maxima': capacidade_maxima,
-        'id_escola': id_escola
-    }
     try:
+        nome = request.form.get('nome')
+        serie = request.form.get('serie')
+        capacidade_maxima = int(request.form.get('capacidade_maxima'))
+        id_escola = int(request.form.get('id_escola'))
+
+        escola = db.session.execute(text("SELECT * FROM escolas WHERE id_escola = :id_escola"), {'id_escola': id_escola}).fetchone()
+
+        if not escola:
+            return {'erro': 'Escola não encontrada.'}, 404
+        
+        sql = text("""
+            INSERT INTO turmas (nome, serie, capacidade_maxima, id_escola)
+            VALUES (:nome, :serie, :capacidade_maxima, :id_escola)
+            RETURNING id_turma
+        """)
+        dados = {
+            'nome': nome,
+            'serie': serie,
+            'capacidade_maxima': capacidade_maxima,
+            'id_escola': id_escola
+        }
         result = db.session.execute(sql, dados)
+        id_turma = result.fetchone()[0]
         db.session.commit()
-        id_gerado = result.fetchone()[0]
-        dados['id'] = id_gerado
+        dados['id_turma'] = id_turma
         return dados, 201
+
     except Exception as e:
+        print("ERRO:", e)
         return {'erro': str(e)}, 400
 
-#Atualizar uma turma existente
-@turma_bp.route('/<int:id>', methods=['PUT'])
+@turma_bp.route('/atualizar/<int:id>', methods=['PUT'])
 def atualizar(id):
-    nome = request.form.get('nome')
-    serie = request.form.get('serie')
-    capacidade_maxima = request.form.get('capacidade_maxima')
-    id_escola = request.form.get('id_escola')
-    sql = text("""
-               UPDATE turmas
-               SET nome = :nome,
-                   serie = :serie,
-                   capacidade_maxima = :capacidade_maxima,
-                   id_escola = :id_escola
-               WHERE id_turma = :id
-               """)
-    dados = {
-        'id': id,
-        'nome': nome,
-        'serie': serie,
-        'capacidade_maxima': capacidade_maxima,
-        'id_escola': id_escola
-    }
     try:
+        turma = db.session.execute(text("SELECT * FROM turmas WHERE id_turma = :id_turma"), {'id_turma': id}).fetchone()
+
+        if not turma:
+            return {'erro': 'Turma não encontrada.'}, 404
+
+        nome = request.form.get('nome')
+        serie = request.form.get('serie')
+        capacidade_maxima = int(request.form.get('capacidade_maxima'))
+        id_escola = int(request.form.get('id_escola'))
+        
+        sql = text("""
+            UPDATE turmas
+            SET nome = :nome,
+                serie = :serie,
+                capacidade_maxima = :capacidade_maxima,
+                id_escola = :id_escola
+            WHERE id_turma = :id_turma
+        """)
+        dados = {
+            'id_turma': id,
+            'nome': nome,
+            'serie': serie,
+            'capacidade_maxima': capacidade_maxima,
+            'id_escola': id_escola
+        }
         db.session.execute(sql, dados)
         db.session.commit()
+
         return dados, 200
+
     except Exception as e:
+        print("ERRO:", e)
+
         return {'erro': str(e)}, 400
 
-#Deletar uma turma existente
-@turma_bp.route('/<int:id>', methods=['DELETE'])
+@turma_bp.route('/deletar/<int:id>', methods=['DELETE'])
 def deletar(id):
-    sql_alunos = text("DELETE FROM alunos WHERE id_turma = :id")
-    sql_turmas = text("DELETE FROM turmas WHERE id_turma = :id")
-    dados = {'id': id}
     try:
-        db.session.execute(sql_alunos, dados)
-        db.session.execute(sql_turmas, dados)
+        turma = db.session.execute(text("SELECT * FROM turmas WHERE id_turma = :id_turma"), {'id_turma': id}).fetchone()
+
+        if not turma:
+            return {'erro': 'Turma não encontrada.'}, 404
+
+        db.session.execute(text("DELETE FROM alunos WHERE id_turma = :id_turma"), {'id_turma': id})
+        db.session.execute(text("DELETE FROM turmas WHERE id_turma = :id_turma"), {'id_turma': id})
         db.session.commit()
+
         return {'mensagem': 'Turma deletada com sucesso'}, 200
+
     except Exception as e:
+        print("ERRO:", e)
         return {'erro': str(e)}, 400
 
-#Ver turma especifica
-@turma_bp.route('/<int:id>', methods=['GET'])
+@turma_bp.route('/ver_uma/<int:id>', methods=['GET'])
 def ver(id):
-    sql = text("SELECT * FROM turmas WHERE id_turma = :id")
-    dados = {'id': id}
     try:
-        result = db.session.execute(sql, dados)
+        result = db.session.execute(text("SELECT * FROM turmas WHERE id_turma = :id_turma"), {'id_turma': id})
         turma = result.fetchone()
+
         if turma:
-            turma_dict = {
-                'id': turma[0],
-                'nome': turma[1],
-                'serie': turma[2],
-                'capacidade_maxima': turma[3],
-                'id_escola': turma[4]
-            }
+            turma_dict = dict(turma._mapping)
             return turma_dict, 200
         else:
             return {'erro': 'Turma não encontrada'}, 404
+
     except Exception as e:
+        print("ERRO:", e)
         return {'erro': str(e)}, 400
 
-#Listar todas as turmas
 @turma_bp.route('/ver', methods=['GET'])
 def listar():
-    sql = text("SELECT * FROM turmas")
     try:
-        result = db.session.execute(sql)
+        result = db.session.execute(text("SELECT * FROM turmas"))
         turmas = result.fetchall()
-        turmas_list = []
-        for turma in turmas:
-            turma_dict = {
-                'id': turma[0],
-                'nome': turma[1],
-                'serie': turma[2],
-                'capacidade_maxima': turma[3],
-                'id_escola': turma[4]
-            }
-            turmas_list.append(turma_dict)
-        return jsonify(turmas_list), 200
+        lista = [dict(t._mapping) for t in turmas]
+
+        return jsonify(lista), 200
+
     except Exception as e:
+        print("ERRO:", e)
         return {'erro': str(e)}, 400

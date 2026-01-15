@@ -1,43 +1,64 @@
 #Banco de dados temporário para testes
-import pytest
 import sys
 import os
+import pytest
 
-# Garantir que o diretório raiz do projeto esteja no sys.path para importar `app`
-root_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if root_dir not in sys.path:
-    sys.path.insert(0, root_dir)
+#Garante que o diretório raiz do projeto seja incluído no sys.path
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.insert(0, ROOT_DIR)
 
 from app import app
-from conf.database import db
-
+from conf.database import db, init_db
+from sqlalchemy import text
 
 @pytest.fixture
 def client():
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///:memory:'
-    # Inicializar o DB após configurar a URI (evita depender de psycopg2 em ambiente de teste)
-    from conf.database import init_db
-    # Chamar init_db apenas se ainda não foi registrado no app
+    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('TEST_DATABASE_URI', 'postgresql+psycopg2://postgres:123@localhost:5432/gestao_testes')
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
     if 'sqlalchemy' not in getattr(app, 'extensions', {}):
         init_db(app)
 
     with app.app_context():
-        db.create_all()
-        # Criar tabela `escolas` (DDL) para os testes, já que o projeto usa SQL cru
-        from sqlalchemy import text
+        if 'sqlalchemy' not in getattr(app, 'extensions', {}):
+            init_db(app)
+
         db.session.execute(text('''
             CREATE TABLE IF NOT EXISTS escolas (
-                id_escola INTEGER PRIMARY KEY AUTOINCREMENT,
-                nome TEXT,
-                endereco TEXT,
-                tipo TEXT,
-                quantidade_turmas INTEGER,
-                vagas INTEGER,
-                capacidade_alunos INTEGER
+                id_escola SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                endereco TEXT NOT NULL,
+                tipo TEXT NOT NULL,
+                quantidade_turmas INTEGER NOT NULL,
+                vagas INTEGER NOT NULL,
+                capacidade_alunos INTEGER NOT NULL
             )
         '''))
+        db.session.execute(text("""
+            CREATE TABLE IF NOT EXISTS turmas (
+                id_turma SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                serie TEXT NOT NULL,
+                capacidade_maxima INTEGER NOT NULL,
+                id_escola INTEGER NOT NULL,
+                FOREIGN KEY (id_escola) REFERENCES escolas(id_escola)
+            )
+        """))
+        db.session.execute(text("""
+            CREATE TABLE IF NOT EXISTS alunos (
+                id_aluno SERIAL PRIMARY KEY,
+                nome TEXT NOT NULL,
+                id_turma INTEGER,
+                FOREIGN KEY (id_turma) REFERENCES turmas(id_turma)
+            )
+        """))
         db.session.commit()
+
         yield app.test_client()
+
+        db.session.execute(text('TRUNCATE TABLE escolas RESTART IDENTITY CASCADE'))
+        db.session.execute(text("TRUNCATE TABLE turmas RESTART IDENTITY CASCADE"))
+        db.session.execute(text("TRUNCATE TABLE escolas RESTART IDENTITY CASCADE"))
+        db.session.commit()
         db.session.remove()
-        db.drop_all()

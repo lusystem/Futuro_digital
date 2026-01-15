@@ -8,7 +8,6 @@ from control.login import login_bp
 
 app = Flask(__name__)
 
-# Nota: a inicialização do DB (`init_db`) é feita externamente (ex: em testes)
 app.register_blueprint(escola_bp)
 app.register_blueprint(turma_bp)
 app.register_blueprint(aluno_bp)
