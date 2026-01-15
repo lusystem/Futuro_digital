@@ -3,10 +3,9 @@ from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
 
-aluno_bp = Blueprint('aluno', __name__, url_prefix = '/alunos')
+aluno_bp = Blueprint('aluno', __name__, url_prefix = '/aluno')
 
-#Cadastrar um novo aluno
-@aluno_bp.route('/cadastrar', methods=['POST'])
+@aluno_bp.route('/criar', methods=['POST'])
 def cadastrar(): 
     nome = request.form.get('nome')
     pcd = request.form.get('pcd') == 'true' #boolean no banco de dados
@@ -14,11 +13,19 @@ def cadastrar():
     descricao_flag = request.form.get('descricao_flag')
     id_turma = request.form.get('id_turma')
 
-    #validar campos obrigatórios
     if not nome or not idade or not id_turma:
         return {'erro': 'Nome, idade e id_turma são obrigatórios.'}, 400
     
-    #validar se a turma existe
+    try:
+        id_turma = int(id_turma)
+    except (ValueError, TypeError):
+        return {'erro': 'id_turma deve ser um número inteiro.'}, 400
+    
+    try:
+        idade = int(idade)
+    except (ValueError, TypeError):
+        return {'erro': 'idade deve ser um número inteiro.'}, 400
+    
     sql_turma = text("SELECT id_turma FROM turmas WHERE id_turma = :id_turma")
     turma_dados = {'id_turma': id_turma}
     turma_result = db.session.execute(sql_turma, turma_dados)
@@ -38,7 +45,6 @@ def cadastrar():
         'descricao_flag': descricao_flag,
         'id_turma': id_turma
     }
-    
     try:
         result = db.session.execute(sql, dados)
         db.session.commit()
@@ -46,16 +52,23 @@ def cadastrar():
         dados['id_aluno'] = id_gerado
         return dados, 201
     except Exception as e:
+        db.session.rollback()
         return {'erro': str(e)}, 400
 
-#Atualizar um aluno existente
-@aluno_bp.route('/<int:id>', methods=['PUT'])
+@aluno_bp.route('/atualizar/<int:id>', methods=['PUT'])
 def atualizar(id):
     nome = request.form.get('nome')
     pcd = request.form.get('pcd') == 'true'  #boolean no banco de dados
     idade = request.form.get('idade')
     descricao_flag = request.form.get('descricao_flag')
     id_turma = request.form.get('id_turma')
+    
+    try:
+        idade = int(idade) if idade else None
+        id_turma = int(id_turma) if id_turma else None
+    except (ValueError, TypeError):
+        return {'erro': 'idade e id_turma devem ser números'}, 400
+    
     sql = text("""
                UPDATE alunos
                SET nome = :nome,
@@ -64,6 +77,7 @@ def atualizar(id):
                    descricao_flag = :descricao_flag,
                    id_turma = :id_turma
                WHERE id_aluno = :id
+               RETURNING id_aluno
                """)
     dados = {
         'id': id,
@@ -73,39 +87,44 @@ def atualizar(id):
         'descricao_flag': descricao_flag,
         'id_turma': id_turma
     }
-
     try:
-        db.session.execute(sql, dados)
+        result = db.session.execute(sql, dados)
         db.session.commit()
-        return dados, 200
+        id_aluno = result.fetchone()[0]
+        return {
+            'id_aluno': id_aluno,
+            'nome': nome,
+            'pcd': pcd,
+            'idade': idade,
+            'descricao_flag': descricao_flag,
+            'id_turma': id_turma
+        }, 200
     except Exception as e:
+        db.session.rollback()
         return {'erro': str(e)}, 400
 
-#Deletar um aluno existente
-@aluno_bp.route('/<int:id>', methods=['DELETE'])
+@aluno_bp.route('/deletar/<int:id>', methods=['DELETE'])
 def deletar(id):
     sql = text("DELETE FROM alunos WHERE id_aluno = :id")
     dados = {'id': id}
-
     try:
         db.session.execute(sql, dados)
         db.session.commit()
-        return {'mensagem': 'Aluno deletado com sucesso.'}, 200
+        return {'mensagem': 'Aluno deletado com sucesso'}, 200
     except Exception as e:
+        db.session.rollback()
         return {'erro': str(e)}, 400
 
-#Ver aluno especifico
-@aluno_bp.route('/<int:id>', methods=['GET'])
+@aluno_bp.route('/ver_uma/<int:id>', methods=['GET'])
 def ver(id):
     sql = text("SELECT * FROM alunos WHERE id_aluno = :id")
     dados = {'id': id}
-
     try:
         result = db.session.execute(sql, dados)
         aluno = result.fetchone()
         if aluno:
             aluno_dict = {
-                'id': aluno[0],
+                'id_aluno': aluno[0],
                 'nome': aluno[1],
                 'pcd': aluno[2],
                 'idade': aluno[3],
@@ -117,12 +136,10 @@ def ver(id):
             return {'mensagem': 'Aluno não encontrado.'}, 404
     except Exception as e:
         return {'erro': str(e)}, 400
-
-#Listar todos os alunos
+    
 @aluno_bp.route('/ver', methods=['GET'])
 def listar():
     sql = text("SELECT * FROM alunos")
-
     try:
         result = db.session.execute(sql)
         alunos = result.fetchall()
@@ -137,6 +154,7 @@ def listar():
                 'id_turma': aluno[5]
             }
             alunos_list.append(aluno_dict)
+            
         return jsonify(alunos_list), 200
     except Exception as e:
         return {'erro': str(e)}, 400

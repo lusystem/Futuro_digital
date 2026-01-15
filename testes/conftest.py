@@ -24,6 +24,11 @@ def client():
         if 'sqlalchemy' not in getattr(app, 'extensions', {}):
             init_db(app)
 
+        db.session.execute(text('DROP TABLE IF EXISTS alunos CASCADE'))
+        db.session.execute(text('DROP TABLE IF EXISTS turmas CASCADE'))
+        db.session.execute(text('DROP TABLE IF EXISTS escolas CASCADE'))
+        db.session.commit()
+
         db.session.execute(text('''
             CREATE TABLE IF NOT EXISTS escolas (
                 id_escola SERIAL PRIMARY KEY,
@@ -49,6 +54,9 @@ def client():
             CREATE TABLE IF NOT EXISTS alunos (
                 id_aluno SERIAL PRIMARY KEY,
                 nome TEXT NOT NULL,
+                pcd BOOLEAN DEFAULT FALSE,
+                idade INTEGER,
+                descricao_flag TEXT,
                 id_turma INTEGER,
                 FOREIGN KEY (id_turma) REFERENCES turmas(id_turma)
             )
