@@ -26,13 +26,20 @@ def cadastrar():
     except (ValueError, TypeError):
         return {'erro': 'idade deve ser um número inteiro.'}, 400
     
-    sql_turma = text("SELECT id_turma FROM turmas WHERE id_turma = :id_turma")
-    turma_dados = {'id_turma': id_turma}
-    turma_result = db.session.execute(sql_turma, turma_dados)
-    turma = turma_result.fetchone()
+    turma = db.session.execute(text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id_turma"),
+        {'id_turma': id_turma}).fetchone()
+
     if not turma:
         return {'erro': 'Turma não encontrada.'}, 404
 
+    capacidade_maxima = turma[0]
+    
+    total_alunos = db.session.execute(text("SELECT COUNT(*) FROM alunos WHERE id_turma = :id_turma"),
+        {'id_turma': id_turma}).scalar()
+    
+    if total_alunos >= capacidade_maxima:
+        return {'erro': 'Turma lotada. Não há vagas disponíveis.'}, 400
+    
     sql = text("""
                INSERT INTO alunos( nome, pcd, idade, descricao_flag, id_turma)
                VALUES (:nome, :pcd, :idade, :descricao_flag, :id_turma)
@@ -47,9 +54,10 @@ def cadastrar():
     }
     try:
         result = db.session.execute(sql, dados)
+        id_aluno = result.fetchone()[0]
         db.session.commit()
-        id_gerado = result.fetchone()[0]
-        dados['id_aluno'] = id_gerado
+
+        dados['id_aluno'] = id_aluno
         return dados, 201
     except Exception as e:
         db.session.rollback()
@@ -154,7 +162,7 @@ def listar():
                 'id_turma': aluno[5]
             }
             alunos_list.append(aluno_dict)
-            
+
         return jsonify(alunos_list), 200
     except Exception as e:
         return {'erro': str(e)}, 400
