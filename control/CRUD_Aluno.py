@@ -32,10 +32,19 @@ def cadastrar():
     if not turma:
         return {'erro': 'Turma não encontrada.'}, 404
 
+    sql_capacidade = text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id_turma")
+    capacidade = db.session.execute(sql_capacidade, {'id_turma': id_turma}).fetchone()[0]
+
+    sql_ocupados = text("SELECT COUNT(*) FROM alunos WHERE id_turma = :id_turma")
+    ocupados = db.session.execute(sql_ocupados, {'id_turma': id_turma}).fetchone()[0]
+
+    if ocupados >= capacidade:
+        return {
+            'erro': 'Turma lotada. Não há vagas disponíveis.'
+        }, 400
     capacidade_maxima = turma[0]
-    
-    total_alunos = db.session.execute(text("SELECT COUNT(*) FROM alunos WHERE id_turma = :id_turma"),
-        {'id_turma': id_turma}).scalar()
+
+    total_alunos = db.session.execute(text("SELECT COUNT(*) FROM alunos WHERE id_turma = :id_turma"), {'id_turma': id_turma}).scalar()
     
     if total_alunos >= capacidade_maxima:
         return {'erro': 'Turma lotada. Não há vagas disponíveis.'}, 400
@@ -71,11 +80,25 @@ def atualizar(id):
     descricao_flag = request.form.get('descricao_flag')
     id_turma = request.form.get('id_turma')
     
+    aluno = db.session.execute(text("SELECT * FROM alunos WHERE id_aluno = :id"), {'id': id}).fetchone()
+    if not aluno:
+        return {'erro': 'Aluno não encontrado.'}, 404
+
     try:
-        idade = int(idade) if idade else None
-        id_turma = int(id_turma) if id_turma else None
+        idade = int(idade) if idade else aluno.idade
+        id_turma = int(id_turma) if id_turma else aluno.id_turma
     except (ValueError, TypeError):
         return {'erro': 'idade e id_turma devem ser números'}, 400
+    
+    capacidade = db.session.execute(text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id"), {'id': id_turma}).scalar()
+
+    if capacidade is None:
+        return {'erro': 'Turma não encontrada.'}, 404
+
+    total = db.session.execute(text("SELECT COUNT(*) FROM alunos WHERE id_turma = :id"),{'id': id_turma}).scalar()
+
+    if total >= capacidade and id_turma != aluno.id_turma:
+        return {'erro': 'Turma lotada. Não é possível transferir o aluno.'}, 400
     
     sql = text("""
                UPDATE alunos
@@ -162,7 +185,6 @@ def listar():
                 'id_turma': aluno[5]
             }
             alunos_list.append(aluno_dict)
-
         return jsonify(alunos_list), 200
     except Exception as e:
         return {'erro': str(e)}, 400

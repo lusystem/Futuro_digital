@@ -122,3 +122,25 @@ def listar():
     except Exception as e:
         print("ERRO:", e)
         return {'erro': str(e)}, 400
+    
+#vagas restantes na turma
+@turma_bp.route('/vagas_restantes/<int:id>', methods=['GET'])
+def vagas_turma(id):
+    turma = db.session.execute(text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id"), {'id': id}).fetchone()
+
+    if not turma:
+        return {'erro': 'Turma não encontrada.'}, 404
+
+    ocupados = db.session.execute(
+        text("SELECT COUNT(*) FROM alunos WHERE id_turma = :id"),
+        {'id': id}
+    ).scalar()
+
+    vagas_restantes = turma.capacidade_maxima - ocupados
+
+    return {
+        'id_turma': id,
+        'capacidade_maxima': turma.capacidade_maxima,
+        'ocupados': ocupados,
+        'vagas_restantes': vagas_restantes
+    }, 200
