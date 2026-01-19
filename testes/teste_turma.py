@@ -1,7 +1,7 @@
 from testes.teste_aluno import criar_aluno_base
 
 def criar_escola_base(client):
-    response = client.post("/escolas", data={
+    response = client.post("/escolas/", data={
         "nome": "Escola Base",
         "endereco": "Rua Base, 123",
         "tipo": "Publica",

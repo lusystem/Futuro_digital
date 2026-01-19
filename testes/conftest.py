@@ -61,6 +61,17 @@ def client():
                 FOREIGN KEY (id_turma) REFERENCES turmas(id_turma)
             )
         """))
+        db.session.execute(text("""
+            CREATE TABLE IF NOT EXISTS usuarios (
+                id_usuario SERIAL PRIMARY KEY,
+                nome_usuario TEXT NOT NULL,
+                email TEXT NOT NULL UNIQUE,
+                senha TEXT NOT NULL,
+                cargo TEXT NOT NULL,
+                id_escola INTEGER,
+                FOREIGN KEY (id_escola) REFERENCES escolas(id_escola)
+            )
+        """))
         db.session.commit()
 
         yield app.test_client()
@@ -68,5 +79,6 @@ def client():
         db.session.execute(text('TRUNCATE TABLE escolas RESTART IDENTITY CASCADE'))
         db.session.execute(text("TRUNCATE TABLE turmas RESTART IDENTITY CASCADE"))
         db.session.execute(text("TRUNCATE TABLE escolas RESTART IDENTITY CASCADE"))
+        db.session.execute(text("TRUNCATE TABLE usuarios RESTART IDENTITY CASCADE"))
         db.session.commit()
         db.session.remove()

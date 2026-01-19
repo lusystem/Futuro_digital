@@ -1,5 +1,5 @@
 def test_criar_escola(client):
-    response = client.post("/escolas", data={
+    response = client.post("/escolas/", data={
         "nome": "Escola Central",
         "endereco": "Rua Principal, 100",
         "tipo": "Publica",
@@ -19,7 +19,7 @@ def test_criar_escola(client):
     assert data["capacidade_alunos"] == 500
 
 def test_ver_escola(client):
-    criar_response = client.post("/escolas", data={
+    criar_response = client.post("/escolas/", data={
         "nome": "Escola Teste",
         "endereco": "Rua Teste, 123",
         "tipo": "Privada",
@@ -42,7 +42,7 @@ def test_ver_escola(client):
     assert data["capacidade_alunos"] == 300
 
 def test_atualizar_escola(client):
-    criar_response = client.post("/escolas", data={
+    criar_response = client.post("/escolas/", data={
         "nome": "Escola Atualizada",
         "endereco": "Rua Atualizada, 789",
         "tipo": "Publica",
@@ -73,12 +73,13 @@ def test_atualizar_escola(client):
 
     ver_response = client.get(f"/escolas/{escola_id}")
     assert ver_response.status_code == 200
+    
     ver_data = ver_response.get_json()
     assert ver_data["nome"] == "Escola Atualizada Nova"
     assert ver_data["tipo"] == "Privada"
 
 def test_deletar_escola(client):
-    criar_response = client.post("/escolas", data={
+    criar_response = client.post("/escolas/", data={
         "nome": "Escola a Deletar",
         "endereco": "Rua Deletar, 456",
         "tipo": "Publica",
@@ -88,7 +89,7 @@ def test_deletar_escola(client):
     })
     escola_id = criar_response.get_json()["id_escola"]
 
-    deletar_response = client.delete(f"/escolas/{escola_id}")
+    deletar_response = client.delete(f"/escolas/deletar/{escola_id}")
     assert deletar_response.status_code == 200
 
     data = deletar_response.get_json()
@@ -99,7 +100,7 @@ def test_deletar_escola(client):
     assert ver_response.get_json()["erro"] == "Escola não encontrada."
 
 def test_listar_escolas(client):
-    client.post("/escolas", data={
+    client.post("/escolas/", data={
         "nome": "Escola A",
         "endereco": "Rua A",
         "tipo": "Publica",
@@ -107,7 +108,7 @@ def test_listar_escolas(client):
         "vagas": 100,
         "capacidade_alunos": 300
     })
-    response = client.get("/escolas")
+    response = client.get("/escolas/listar")
     assert response.status_code == 200
 
     data = response.get_json()
