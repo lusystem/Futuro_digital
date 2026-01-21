@@ -1,3 +1,5 @@
+from control import seguranca
+
 def criar_escola(client):
     response = client.post("/escolas/", data = {
         "nome": "Escola Teste",
@@ -52,7 +54,7 @@ def test_login_usuario(client):
 def test_login_usuario_invalido(client):
     response = client.post("/login/", data = {
         "email": "",
-        "senha": "senha_errada"
+        "senha": 'senhaa'
     })
     assert response.status_code == 400
     data = response.get_json()

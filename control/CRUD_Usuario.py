@@ -1,19 +1,23 @@
-#CRUD usuario
 from flask import Flask, Blueprint, request, jsonify
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
+from flask_jwt_extended import jwt_required
 from conf.database import db
+from control import seguranca
 
 usuario_bp = Blueprint('usuario', __name__, url_prefix = '/usuarios')
 
-#Atualizar um usuario existente
 @usuario_bp.route('/<int:id>', methods=['PUT'])
+@jwt_required()
 def atualizar(id):
     nome_usuario = request.form.get('nome_usuario')
     email = request.form.get('email')
     senha = request.form.get('senha')
     cargo = request.form.get('cargo')
     id_escola = request.form.get('id_escola')
+    
+    senha_hash = seguranca.hash_senha(senha) if senha else None
+    
     sql = text("""
                UPDATE usuarios
                SET nome_usuario = :nome_usuario,
@@ -24,26 +28,26 @@ def atualizar(id):
                WHERE id_usuario = :id
                """)
     dados = {
-        'id_usuario': id,
+        'id': id,
         'nome_usuario': nome_usuario,
         'email': email,
-        'senha': senha, #implementar hash de senha em produção
+        'senha': senha_hash,
         'cargo': cargo,
         'id_escola': id_escola
     }
     try:
         db.session.execute(sql, dados)
         db.session.commit()
-        return dados, 200
+        return {'mensagem': 'Usuário atualizado com sucesso.'}, 200
     except Exception as e:
         return {'erro': str(e)}, 400
     
-#Deletar um usuario existente
 @usuario_bp.route('/<int:id>', methods=['DELETE'])
+@jwt_required()
 def deletar(id):
     sql = text("DELETE FROM usuarios WHERE id_usuario = :id")
     dados = {
-        'id_usuario': id
+        'id': id
     }
     try:
         db.session.execute(sql, dados)
@@ -52,8 +56,8 @@ def deletar(id):
     except Exception as e:
         return {'erro': str(e)}, 400
     
-#Listar todos os usuarios
 @usuario_bp.route('/', methods=['GET'])
+@jwt_required()
 def listar():
     sql = text("""
                SELECT id_usuario, nome_usuario, email, cargo, id_escola
@@ -75,8 +79,8 @@ def listar():
     except Exception as e:
         return {'erro': str(e)}, 400
     
-#Ver usuario especifico
 @usuario_bp.route('/<int:id>', methods=['GET'])
+@jwt_required()
 def ver(id):
     sql = text("""
                SELECT id_usuario, nome_usuario, email, cargo, id_escola
@@ -84,7 +88,7 @@ def ver(id):
                WHERE id_usuario = :id
                """)
     dados = {
-        'id_usuario': id
+        'id': id
     }
     try:
         result = db.session.execute(sql, dados)

@@ -3,30 +3,28 @@ import sys
 import os
 import pytest
 
+os.environ["PYTHONUTF8"] = "1"
+
 #Garante que o diretório raiz do projeto seja incluído no sys.path
 ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 sys.path.insert(0, ROOT_DIR)
 
-from app import app
-from conf.database import db, init_db
+from app import create_app
+from conf.database import db
 from sqlalchemy import text
 
 @pytest.fixture
 def client():
+    app = create_app()
     app.config['TESTING'] = True
-    app.config['SQLALCHEMY_DATABASE_URI'] = os.environ.get('TEST_DATABASE_URI', 'postgresql+psycopg2://postgres:123@localhost:5432/gestao_testes')
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql+psycopg2://postgres:123@localhost/edugesto'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
-    if 'sqlalchemy' not in getattr(app, 'extensions', {}):
-        init_db(app)
-
     with app.app_context():
-        if 'sqlalchemy' not in getattr(app, 'extensions', {}):
-            init_db(app)
-
         db.session.execute(text('DROP TABLE IF EXISTS alunos CASCADE'))
         db.session.execute(text('DROP TABLE IF EXISTS turmas CASCADE'))
         db.session.execute(text('DROP TABLE IF EXISTS escolas CASCADE'))
+        db.session.execute(text('DROP TABLE IF EXISTS usuarios CASCADE'))
         db.session.commit()
 
         db.session.execute(text('''
@@ -78,7 +76,7 @@ def client():
 
         db.session.execute(text('TRUNCATE TABLE escolas RESTART IDENTITY CASCADE'))
         db.session.execute(text("TRUNCATE TABLE turmas RESTART IDENTITY CASCADE"))
-        db.session.execute(text("TRUNCATE TABLE escolas RESTART IDENTITY CASCADE"))
+        db.session.execute(text("TRUNCATE TABLE alunos RESTART IDENTITY CASCADE"))
         db.session.execute(text("TRUNCATE TABLE usuarios RESTART IDENTITY CASCADE"))
         db.session.commit()
         db.session.remove()

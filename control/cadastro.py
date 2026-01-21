@@ -2,6 +2,7 @@
 from flask import Blueprint, request, jsonify
 from conf.database import db
 from sqlalchemy import text
+from control import seguranca
 
 cadastro_bp = Blueprint('cadastro', __name__, url_prefix = '/cadastro')
 
@@ -15,8 +16,9 @@ def cadastro():
 
     if not nome_usuario or not email or not senha:
         return {'erro': 'Todos os campos são obrigatórios.'}, 400
-    
-    #salvar no banco de dados
+
+    senha = seguranca.hash_senha(senha)
+
     sql = text("""
                INSERT INTO usuarios( nome_usuario, email, senha, cargo, id_escola)
                VALUES (:nome_usuario, :email, :senha, :cargo, :id_escola)
@@ -25,11 +27,10 @@ def cadastro():
     dados = {
         'nome_usuario': nome_usuario,
         'email': email,
-        'senha': senha, #implementar hash de senha em produção
+        'senha': senha,
         'cargo': cargo,
         'id_escola': id_escola
     }
-
     try:
         result = db.session.execute(sql, dados)
         db.session.commit()
@@ -39,4 +40,3 @@ def cadastro():
     
     except Exception as e:
         return {'erro': str(e)}, 400
-    

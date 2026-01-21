@@ -1,7 +1,9 @@
-#rota de login
+#rota de login para autenticação de usuários
 from flask import Blueprint, request, jsonify
 from conf.database import db
 from sqlalchemy import text
+from control import seguranca
+from flask_jwt_extended import create_access_token
 
 login_bp = Blueprint('login', __name__, url_prefix = '/login')
 
@@ -13,30 +15,30 @@ def login():
     if not email or not senha:
         return {'erro': 'Email e senha são obrigatórios.'}, 400
     
-    #verificar se esta no banco de dados
     sql = text("""
-               SELECT id_usuario, nome_usuario, email, cargo, id_escola
+               SELECT id_usuario, nome_usuario, email, cargo, id_escola, senha
                FROM usuarios
-               WHERE email = :email AND senha = :senha
+               WHERE email = :email
                """)
-    dados = {
-        'email': email,
-        'senha': senha #implementar hash de senha em produção
-    }
+    result = db.session.execute(sql, {'email': email})
+    usuario = result.fetchone()
 
-    try:
-        result = db.session.execute(sql, dados)
-        usuario = result.fetchone()
-        if not usuario:
-            return {'erro': 'Credenciais inválidas.'}, 401
-        
-        usuario_dict = {
-            'id_usuario': usuario[0],
-            'nome_usuario': usuario[1],
-            'email': usuario[2],
-            'cargo': usuario[3],
-            'id_escola': usuario[4]
-        }
-        return usuario_dict, 200
-    except Exception as e:
-        return {'erro': str(e)}, 400
+    if not usuario:
+        return {'erro': 'Credenciais inválidas.'}, 401
+
+    if not seguranca.verificar_senha(senha, usuario.senha):
+        return {'erro': 'Credenciais inválidas.'}, 401
+
+    token = create_access_token(identity = {
+        'id_usuario': usuario.id_usuario,
+        'cargo': usuario.cargo,
+        'id_escola': usuario.id_escola
+    })
+
+    return {
+        'access_token': token,
+        'id_usuario': usuario.id_usuario,
+        'nome_usuario': usuario.nome_usuario,
+        'email': usuario.email,
+        'cargo': usuario.cargo
+    }, 200
