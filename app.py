@@ -8,7 +8,7 @@ from control.cadastro import cadastro_bp
 from control.login import login_bp
 from control.CRUD_Staff import staff_bp
 from control.CRUD_Projetos import projetos_bp
-from control.Dashboard import dashboard_bp
+from control.dashboard import dashboard_bp
 
 def create_app():
     app = Flask(__name__)
