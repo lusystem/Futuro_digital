@@ -6,6 +6,9 @@ from control.CRUD_Turmas import turma_bp
 from control.CRUD_Aluno import aluno_bp
 from control.cadastro import cadastro_bp
 from control.login import login_bp
+from control.CRUD_Staff import staff_bp
+from control.CRUD_Projetos import projetos_bp
+from control.Dashboard import dashboard_bp
 
 def create_app():
     app = Flask(__name__)
@@ -17,6 +20,9 @@ def create_app():
     app.register_blueprint(aluno_bp)
     app.register_blueprint(cadastro_bp)
     app.register_blueprint(login_bp)
+    app.register_blueprint(staff_bp)
+    app.register_blueprint(projetos_bp)
+    app.register_blueprint(dashboard_bp)
 
     init_db(app)
 

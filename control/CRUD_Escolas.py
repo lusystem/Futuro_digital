@@ -1,4 +1,3 @@
-#CRUD inicial de escolas 
 from flask import Flask, Blueprint, request, jsonify
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
@@ -6,7 +5,7 @@ from conf.database import db
 
 escola_bp = Blueprint('escola', __name__, url_prefix = '/escolas') 
 
-@escola_bp.route('/', methods=['POST'])
+@escola_bp.route('/', methods = ['POST'])
 def cadastrar():
     nome = request.form.get('nome')
     endereco = request.form.get('endereco')
@@ -40,7 +39,7 @@ def cadastrar():
     except Exception as e:
         return {'erro': str(e)}, 400
     
-@escola_bp.route('/<int:id>', methods=['PUT'])
+@escola_bp.route('/<int:id>', methods = ['PUT'])
 def atualizar(id):
     escola = db.session.execute(text("SELECT * FROM escolas WHERE id_escola = :id_escola"), {'id_escola': id}).fetchone()
     if not escola:
@@ -79,8 +78,7 @@ def atualizar(id):
     except Exception as e:
         return {'erro': str(e)}, 400
 
-#Deletar uma escola existente
-@escola_bp.route('/deletar/<int:id>', methods=['DELETE'])
+@escola_bp.route('/deletar/<int:id>', methods = ['DELETE'])
 def deletar(id):
     escola = db.session.execute(text("SELECT * FROM escolas WHERE id_escola = :id_escola"), {'id_escola': id}).fetchone()
     if not escola:
@@ -96,8 +94,7 @@ def deletar(id):
     except Exception as e:
         return {'erro': str(e)}, 400
 
-#Ver escola especifica
-@escola_bp.route('/<int:id>', methods=['GET'])
+@escola_bp.route('/<int:id>', methods = ['GET'])
 def ver(id):
     sql = text("SELECT * FROM escolas WHERE id_escola = :id_escola")
     dados = {'id_escola': id}
@@ -112,13 +109,48 @@ def ver(id):
     except Exception as e:
         return {'erro': str(e)}, 400
 
-#Listar todas as escolas
-@escola_bp.route('/listar', methods=['GET'])
+@escola_bp.route('/listar', methods = ['GET'])
 def listar():
     sql = text("SELECT * FROM escolas")
     try:
         result = db.session.execute(sql)
         escolas = [dict(row._mapping) for row in result.fetchall()]
         return jsonify(escolas), 200
+    except Exception as e:
+        return {'erro': str(e)}, 400
+
+@escola_bp.route('/<int:id>/vacancies', methods = ['GET'])
+def calcular_vagas(id):
+    sql_escola = text("SELECT capacidade_alunos FROM escolas WHERE id_escola = :id_escola")
+    try:
+        result = db.session.execute(sql_escola, {'id_escola': id})
+        escola = result.fetchone()
+        
+        if not escola:
+            return {'erro': 'Escola não encontrada.'}, 404
+        
+        capacidade_total = escola.capacidade_alunos
+        
+        #Contar alunos matriculados na escola
+        sql_alunos = text("""
+            SELECT COUNT(a.id_aluno) as total_alunos
+            FROM alunos a
+            JOIN turmas t ON a.id_turma = t.id_turma
+            WHERE t.id_escola = :id_escola
+        """)
+        result_alunos = db.session.execute(sql_alunos, {'id_escola': id})
+        alunos_row = result_alunos.fetchone()
+        alunos_ocupados = alunos_row.total_alunos if alunos_row else 0
+        
+        vagas_livres = capacidade_total - alunos_ocupados
+        
+        return {
+            'id_escola': id,
+            'vagas_totais': capacidade_total,
+            'vagas_ocupadas': alunos_ocupados,
+            'vagas_livres': max(0, vagas_livres),
+            'percentual_ocupacao': round((alunos_ocupados / capacidade_total * 100), 2) if capacidade_total > 0 else 0
+        }, 200
+        
     except Exception as e:
         return {'erro': str(e)}, 400
