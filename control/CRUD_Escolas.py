@@ -121,7 +121,7 @@ def listar():
 
 @escola_bp.route('/<int:id>/vacancies', methods = ['GET'])
 def calcular_vagas(id):
-    sql_escola = text("SELECT capacidade_alunos FROM escolas WHERE id_escola = :id_escola")
+    sql_escola = text("SELECT vagas, capacidade_alunos FROM escolas WHERE id_escola = :id_escola")
     try:
         result = db.session.execute(sql_escola, {'id_escola': id})
         escola = result.fetchone()
@@ -129,7 +129,7 @@ def calcular_vagas(id):
         if not escola:
             return {'erro': 'Escola não encontrada.'}, 404
         
-        capacidade_total = escola.capacidade_alunos
+        vagas_totais = escola.vagas
         
         #Contar alunos matriculados na escola
         sql_alunos = text("""
@@ -142,14 +142,14 @@ def calcular_vagas(id):
         alunos_row = result_alunos.fetchone()
         alunos_ocupados = alunos_row.total_alunos if alunos_row else 0
         
-        vagas_livres = capacidade_total - alunos_ocupados
+        vagas_livres = vagas_totais - alunos_ocupados
         
         return {
             'id_escola': id,
-            'vagas_totais': capacidade_total,
+            'vagas_totais': vagas_totais,
             'vagas_ocupadas': alunos_ocupados,
             'vagas_livres': max(0, vagas_livres),
-            'percentual_ocupacao': round((alunos_ocupados / capacidade_total * 100), 2) if capacidade_total > 0 else 0
+            'percentual_ocupacao': round((alunos_ocupados / vagas_totais * 100), 2) if vagas_totais > 0 else 0
         }, 200
         
     except Exception as e:
