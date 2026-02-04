@@ -1,4 +1,4 @@
-#Banco de dados temporário para testes
+#Banco de dados temporário para teste
 import sys
 import os
 import pytest
