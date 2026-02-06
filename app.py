@@ -1,3 +1,4 @@
+from email.mime import text
 from flask import Flask
 from conf.database import init_db
 from flask_jwt_extended import JWTManager
@@ -34,7 +35,7 @@ def create_app():
     @app.route("/test-db")
     def test_db():
         try:
-            db.session.execute("SELECT 1")
+            db.session.execute(text("SELECT 1"))
             return "✅ Banco conectado com sucesso!"
         except Exception as e:
             return f"❌ Erro ao conectar no banco: {e}"
