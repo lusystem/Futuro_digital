@@ -11,6 +11,7 @@ from control.CRUD_Staff import staff_bp
 from control.CRUD_Projetos import projetos_bp
 from control.dashboard import dashboard_bp
 from conf.database import db
+from sqlalchemy import text
 
 def create_app():
     app = Flask(__name__)
@@ -31,7 +32,7 @@ def create_app():
     @app.route("/")
     def home():
         return "API Gestao Educacional rodando!"
-    
+
     @app.route("/test-db")
     def test_db():
         try:
@@ -39,7 +40,6 @@ def create_app():
             return "✅ Banco conectado com sucesso!"
         except Exception as e:
             return f"❌ Erro ao conectar no banco: {e}"
-
     return app
 
 app = create_app()
