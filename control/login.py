@@ -29,11 +29,13 @@ def login():
     if not seguranca.verificar_senha(senha, usuario.senha):
         return {'erro': 'Credenciais inválidas.'}, 401
 
-    token = create_access_token(identity = {
-        'id_usuario': usuario.id_usuario,
-        'cargo': usuario.cargo,
-        'id_escola': usuario.id_escola
-    })
+    token = create_access_token(
+        identity=str(usuario.id_usuario),
+        additional_claims={
+            'cargo': usuario.cargo,
+            'id_escola': usuario.id_escola
+        }
+    )
 
     return {
         'access_token': token,
