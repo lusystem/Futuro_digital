@@ -94,7 +94,7 @@ def deletar(id):
         print("ERRO:", e)
         return {'erro': str(e)}, 400
 
-@turma_bp.route('/ver_uma/<int:id>', methods=['GET'])
+@turma_bp.route('/ver/<int:id>', methods=['GET'])
 def ver(id):
     try:
         result = db.session.execute(text("SELECT * FROM turmas WHERE id_turma = :id_turma"), {'id_turma': id})
@@ -110,7 +110,7 @@ def ver(id):
         print("ERRO:", e)
         return {'erro': str(e)}, 400
 
-@turma_bp.route('/ver', methods=['GET'])
+@turma_bp.route('/listar', methods=['GET'])
 def listar():
     try:
         result = db.session.execute(text("SELECT * FROM turmas"))

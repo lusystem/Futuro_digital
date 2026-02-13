@@ -37,9 +37,9 @@ def create_app():
     def test_db():
         try:
             db.session.execute(text("SELECT 1"))
-            return "✅ Banco conectado com sucesso!"
+            return "Banco conectado com sucesso!"
         except Exception as e:
-            return f"❌ Erro ao conectar no banco: {e}"
+            return f"Erro ao conectar no banco: {e}"
     return app
 
 app = create_app()

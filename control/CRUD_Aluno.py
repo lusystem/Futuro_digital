@@ -146,7 +146,7 @@ def deletar(id):
         db.session.rollback()
         return {'erro': str(e)}, 400
 
-@aluno_bp.route('/ver_uma/<int:id>', methods=['GET'])
+@aluno_bp.route('/ver/<int:id>', methods=['GET'])
 def ver(id):
     sql = text("SELECT * FROM alunos WHERE id_aluno = :id")
     dados = {'id': id}
@@ -168,7 +168,7 @@ def ver(id):
     except Exception as e:
         return {'erro': str(e)}, 400
     
-@aluno_bp.route('/ver', methods=['GET'])
+@aluno_bp.route('/listar', methods=['GET'])
 def listar():
     sql = text("SELECT * FROM alunos")
     try:

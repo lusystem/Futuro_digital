@@ -5,7 +5,7 @@ from conf.database import db
 
 escola_bp = Blueprint('escola', __name__, url_prefix = '/escolas') 
 
-@escola_bp.route('/', methods = ['POST'])
+@escola_bp.route('/criar', methods = ['POST'])
 def cadastrar():
     nome = request.form.get('nome')
     endereco = request.form.get('endereco')
@@ -39,7 +39,7 @@ def cadastrar():
     except Exception as e:
         return {'erro': str(e)}, 400
     
-@escola_bp.route('/<int:id>', methods = ['PUT'])
+@escola_bp.route('/atualizar/<int:id>', methods = ['PUT'])
 def atualizar(id):
     escola = db.session.execute(text("SELECT * FROM escolas WHERE id_escola = :id_escola"), {'id_escola': id}).fetchone()
     if not escola:
@@ -94,7 +94,7 @@ def deletar(id):
     except Exception as e:
         return {'erro': str(e)}, 400
 
-@escola_bp.route('/<int:id>', methods = ['GET'])
+@escola_bp.route('/ver/<int:id>', methods = ['GET'])
 def ver(id):
     sql = text("SELECT * FROM escolas WHERE id_escola = :id_escola")
     dados = {'id_escola': id}

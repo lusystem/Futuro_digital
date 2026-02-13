@@ -123,7 +123,7 @@ def deletar_projeto(id):
     except Exception as e:
         return {'erro': str(e)}, 400
 
-@projetos_bp.route('/listagem', methods=['GET'])
+@projetos_bp.route('/listar', methods=['GET'])
 @jwt_required()
 def listar_projetos():
     sql = text("SELECT * FROM projetos")

@@ -25,7 +25,6 @@ def criar_staff():
         VALUES (:nome, :cargo, :carga_horaria, :especialidade, :id_escola, :status_lotacao, :escola_origem_id)
         RETURNING id_staff
     """)
-    
     dados = {
         'nome': nome,
         'cargo': cargo,
