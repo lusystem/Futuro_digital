@@ -2,10 +2,16 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy import text
 from conf.database import db
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt
 from control.seguranca import admin_qualquer
 
 staff_bp = Blueprint('staff', __name__, url_prefix='/staff')
+
+def _id_escola_admin_escola():
+    claims = get_jwt()
+    if claims.get('cargo') == 'admin_escola':
+        return claims.get('id_escola')
+    return None
 
 @staff_bp.route('/criar', methods = ['POST'])
 @jwt_required()
@@ -21,6 +27,10 @@ def criar_staff():
 
     if not all([nome, cargo, carga_horaria, id_escola]):
         return {'erro': 'Nome, cargo, carga_horaria e id_escola são obrigatórios.'}, 400
+
+    id_escola_admin = _id_escola_admin_escola()
+    if id_escola_admin and str(id_escola_admin) != str(id_escola):
+        return {'erro': 'Acesso não autorizado.'}, 403
 
     sql = text("""
         INSERT INTO staff (nome, cargo, carga_horaria, especialidade, id_escola, status_lotacao, escola_origem_id)
@@ -40,7 +50,6 @@ def criar_staff():
         result = db.session.execute(sql, dados)
         id_staff = result.fetchone()[0]
         db.session.commit()
-        
         dados['id_staff'] = id_staff
         return dados, 201
     
@@ -58,6 +67,9 @@ def ver_staff(id):
         staff = result.fetchone()
         
         if staff:
+            id_escola_admin = _id_escola_admin_escola()
+            if id_escola_admin and staff.id_escola != id_escola_admin:
+                return {'erro': 'Acesso não autorizado.'}, 403
             return dict(staff._mapping), 200
         else:
             return {'erro': 'Servidor não encontrado.'}, 404
@@ -71,9 +83,13 @@ def ver_staff(id):
 def atualizar_staff(id):
     sql_check = text("SELECT * FROM staff WHERE id_staff = :id_staff")
     result = db.session.execute(sql_check, {'id_staff': id})
-    
-    if not result.fetchone():
+    staff = result.fetchone()
+    if not staff:
         return {'erro': 'Servidor não encontrado.'}, 404
+
+    id_escola_admin = _id_escola_admin_escola()
+    if id_escola_admin and staff.id_escola != id_escola_admin:
+        return {'erro': 'Acesso não autorizado.'}, 403
     
     nome = request.form.get('nome')
     cargo = request.form.get('cargo')
@@ -82,7 +98,6 @@ def atualizar_staff(id):
     id_escola = request.form.get('id_escola')
     status_lotacao = request.form.get('status_lotacao')
     escola_origem_id = request.form.get('escola_origem_id')
-    
     updates = []
     dados = {'id_staff': id}
     
@@ -99,6 +114,8 @@ def atualizar_staff(id):
         updates.append("especialidade = :especialidade")
         dados['especialidade'] = especialidade
     if id_escola:
+        if id_escola_admin and str(id_escola_admin) != str(id_escola):
+            return {'erro': 'Acesso não autorizado.'}, 403
         updates.append("id_escola = :id_escola")
         dados['id_escola'] = id_escola
     if status_lotacao:
@@ -127,9 +144,13 @@ def atualizar_staff(id):
 def deletar_staff(id):
     sql_check = text("SELECT * FROM staff WHERE id_staff = :id_staff")
     result = db.session.execute(sql_check, {'id_staff': id})
-    
-    if not result.fetchone():
+    staff = result.fetchone()
+    if not staff:
         return {'erro': 'Servidor não encontrado.'}, 404
+
+    id_escola_admin = _id_escola_admin_escola()
+    if id_escola_admin and staff.id_escola != id_escola_admin:
+        return {'erro': 'Acesso não autorizado.'}, 403
     
     sql = text("DELETE FROM staff WHERE id_staff = :id_staff")
     
@@ -153,7 +174,7 @@ def listar_staff():
     status = request.args.get('status')
     cargo_filtro = role or papel
     especialidade_filtro = specialty or especialidade
-    
+    id_escola_admin = _id_escola_admin_escola()
     sql = "SELECT * FROM staff WHERE 1=1"
     params = {}
     
@@ -165,7 +186,10 @@ def listar_staff():
         sql += " AND especialidade = :especialidade"
         params['especialidade'] = especialidade_filtro
     
-    if escola:
+    if id_escola_admin:
+        sql += " AND id_escola = :escola"
+        params['escola'] = id_escola_admin
+    elif escola:
         sql += " AND id_escola = :escola"
         params['escola'] = escola
     

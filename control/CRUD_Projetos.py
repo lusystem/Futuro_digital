@@ -1,10 +1,35 @@
 from flask import Blueprint, request, jsonify
 from sqlalchemy import text
 from conf.database import db
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt
 from control.seguranca import admin_qualquer
 
 projetos_bp = Blueprint('projetos', __name__, url_prefix = '/projetos')
+
+def _id_escola_admin_escola():
+    claims = get_jwt()
+    if claims.get('cargo') == 'admin_escola':
+        return claims.get('id_escola')
+    return None
+
+def _autorizar_projeto_por_escola(id_projeto):
+    id_escola_admin = _id_escola_admin_escola()
+    if not id_escola_admin:
+        return None
+    row = db.session.execute(
+        text("""
+            SELECT 1
+            FROM projeto_professores pp
+            JOIN staff s ON s.id_staff = pp.id_staff
+            WHERE pp.id_projeto = :id_projeto
+              AND s.id_escola = :id_escola
+            LIMIT 1
+        """),
+        {'id_projeto': id_projeto, 'id_escola': id_escola_admin}).fetchone()
+    
+    if row:
+        return None
+    return {'erro': 'Acesso não autorizado.'}, 403
 
 @projetos_bp.route('/criar', methods = ['POST'])
 @jwt_required()
@@ -45,6 +70,9 @@ def criar_projeto():
 @jwt_required()
 @admin_qualquer
 def ver_projeto(id):
+    auth = _autorizar_projeto_por_escola(id)
+    if auth:
+        return auth
     sql = text("SELECT * FROM projetos WHERE id_projeto = :id_projeto")
     
     try:
@@ -63,6 +91,9 @@ def ver_projeto(id):
 @jwt_required()
 @admin_qualquer
 def atualizar_projeto(id):
+    auth = _autorizar_projeto_por_escola(id)
+    if auth:
+        return auth
     sql_check = text("SELECT * FROM projetos WHERE id_projeto = :id_projeto")
     result = db.session.execute(sql_check, {'id_projeto': id})
     
@@ -110,6 +141,9 @@ def atualizar_projeto(id):
 @jwt_required()
 @admin_qualquer
 def deletar_projeto(id):
+    auth = _autorizar_projeto_por_escola(id)
+    if auth:
+        return auth
     sql_check = text("SELECT * FROM projetos WHERE id_projeto = :id_projeto")
     result = db.session.execute(sql_check, {'id_projeto': id})
     
@@ -130,9 +164,21 @@ def deletar_projeto(id):
 @jwt_required()
 @admin_qualquer
 def listar_projetos():
-    sql = text("SELECT * FROM projetos")
+    id_escola_admin = _id_escola_admin_escola()
+    if id_escola_admin:
+        sql = text("""
+            SELECT DISTINCT p.*
+            FROM projetos p
+            JOIN projeto_professores pp ON p.id_projeto = pp.id_projeto
+            JOIN staff s ON s.id_staff = pp.id_staff
+            WHERE s.id_escola = :id_escola
+        """)
+        params = {'id_escola': id_escola_admin}
+    else:
+        sql = text("SELECT * FROM projetos")
+        params = {}
     try:
-        result = db.session.execute(sql)
+        result = db.session.execute(sql, params)
         projetos_list = [dict(row._mapping) for row in result.fetchall()]
         return jsonify(projetos_list), 200
     
@@ -155,8 +201,13 @@ def adicionar_professor_projeto(id_projeto):
     
     sql_staff = text("SELECT * FROM staff WHERE id_staff = :id_staff")
     result = db.session.execute(sql_staff, {'id_staff': id_staff})
-    if not result.fetchone():
+    staff = result.fetchone()
+    if not staff:
         return {'erro': 'Servidor não encontrado.'}, 404
+
+    id_escola_admin = _id_escola_admin_escola()
+    if id_escola_admin and staff.id_escola != id_escola_admin:
+        return {'erro': 'Acesso não autorizado.'}, 403
     
     sql_check = text("""
         SELECT * FROM projeto_professores 
@@ -199,6 +250,20 @@ def adicionar_professor_projeto(id_projeto):
 @jwt_required()
 @admin_qualquer
 def remover_professor_projeto(id_projeto, id_staff):
+    id_escola_admin = _id_escola_admin_escola()
+    if id_escola_admin:
+        vinculo = db.session.execute(
+            text("""
+                SELECT 1
+                FROM projeto_professores pp
+                JOIN staff s ON s.id_staff = pp.id_staff
+                WHERE pp.id_projeto = :id_projeto
+                  AND pp.id_staff = :id_staff
+                  AND s.id_escola = :id_escola
+            """),
+            {'id_projeto': id_projeto, 'id_staff': id_staff, 'id_escola': id_escola_admin}).fetchone()
+        if not vinculo:
+            return {'erro': 'Acesso não autorizado.'}, 403
     sql_check = text("""
         SELECT * FROM projeto_professores 
         WHERE id_projeto = :id_projeto AND id_staff = :id_staff
@@ -224,13 +289,30 @@ def remover_professor_projeto(id_projeto, id_staff):
 @jwt_required()
 @admin_qualquer
 def listar_professores_projeto(id_projeto):
-    sql = text("""
-        SELECT s.* FROM staff s
-        JOIN projeto_professores pp ON s.id_staff = pp.id_staff
-        WHERE pp.id_projeto = :id_projeto
-    """)
+    auth = _autorizar_projeto_por_escola(id_projeto)
+    if auth:
+        return auth
+
+    id_escola_admin = _id_escola_admin_escola()
+    if id_escola_admin:
+        sql = text("""
+            SELECT s.*
+            FROM staff s
+            JOIN projeto_professores pp ON s.id_staff = pp.id_staff
+            WHERE pp.id_projeto = :id_projeto
+              AND s.id_escola = :id_escola
+        """)
+        params = {'id_projeto': id_projeto, 'id_escola': id_escola_admin}
+    else:
+        sql = text("""
+            SELECT s.*
+            FROM staff s
+            JOIN projeto_professores pp ON s.id_staff = pp.id_staff
+            WHERE pp.id_projeto = :id_projeto
+        """)
+        params = {'id_projeto': id_projeto}
     try:
-        result = db.session.execute(sql, {'id_projeto': id_projeto})
+        result = db.session.execute(sql, params)
         professores = [dict(row._mapping) for row in result.fetchall()]
         return jsonify(professores), 200
     
