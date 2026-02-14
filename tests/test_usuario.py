@@ -1,7 +1,7 @@
 from control import seguranca
 
 def criar_escola(client):
-    response = client.post("/escolas/", data = {
+    response = client.post("/escolas/criar", data = {
         "nome": "Escola Teste",
         "endereco": "Rua Teste",
         "tipo": "Publica",

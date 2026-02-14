@@ -2,7 +2,7 @@ from flask import Blueprint, request, jsonify
 from sqlalchemy import text
 from conf.database import db
 
-turma_bp = Blueprint('turma', __name__, url_prefix='/turma')
+turma_bp = Blueprint('turmas', __name__, url_prefix='/turmas')
 
 @turma_bp.route('/criar', methods=['POST'])
 def cadastrar():

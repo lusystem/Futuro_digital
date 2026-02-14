@@ -33,7 +33,6 @@ def criar_projeto():
         result = db.session.execute(sql, dados)
         id_projeto = result.fetchone()[0]
         db.session.commit()
-        
         dados['id_projeto'] = id_projeto
         return dados, 201
     
@@ -71,7 +70,6 @@ def atualizar_projeto(id):
     data_fim = request.form.get('data_fim')
     nivel = request.form.get('nivel')
     alunos_atingidos = request.form.get('alunos_atingidos')
-    
     updates = []
     dados = {'id_projeto': id}
     

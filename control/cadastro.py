@@ -35,8 +35,12 @@ def cadastro():
         result = db.session.execute(sql, dados)
         db.session.commit()
         id_gerado = result.fetchone()[0]
-        dados['id_usuario'] = id_gerado
-        return dados, 201
-    
+        return {
+            'id_usuario': id_gerado,
+            'nome_usuario': nome_usuario,
+            'email': email,
+            'cargo': cargo,
+            'id_escola': id_escola
+        }, 201
     except Exception as e:
         return {'erro': str(e)}, 400

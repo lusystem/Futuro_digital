@@ -3,7 +3,7 @@ from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
 
-aluno_bp = Blueprint('aluno', __name__, url_prefix = '/aluno')
+aluno_bp = Blueprint('alunos', __name__, url_prefix = '/alunos')
 
 @aluno_bp.route('/criar', methods=['POST'])
 def cadastrar(): 
@@ -177,7 +177,7 @@ def listar():
         alunos_list = []
         for aluno in alunos:
             aluno_dict = {
-                'id': aluno[0],
+                'id_aluno': aluno[0],
                 'nome': aluno[1],
                 'pcd': aluno[2],
                 'idade': aluno[3],

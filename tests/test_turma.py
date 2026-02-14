@@ -1,7 +1,7 @@
 from tests.test_aluno import criar_aluno_base
 
 def criar_escola_base(client):
-    response = client.post("/escolas/", data = {
+    response = client.post("/escolas/criar", data = {
         "nome": "Escola Base", 
         "endereco": "Rua Base, 123",
         "tipo": "Publica",
@@ -13,7 +13,7 @@ def criar_escola_base(client):
 
 def test_criar_turma(client):
     id_escola = criar_escola_base(client)
-    response = client.post("/turma/criar", data = {
+    response = client.post("/turmas/criar", data = {
         "nome": "Turma A",
         "serie": "1º Ano",
         "capacidade_maxima": 30,
@@ -31,7 +31,7 @@ def test_criar_turma(client):
 def test_ver_turma(client):
     id_escola = criar_escola_base(client)
 
-    criar = client.post("/turma/criar", data = {
+    criar = client.post("/turmas/criar", data = {
         "nome": "Turma B",
         "serie": "2º Ano",
         "capacidade_maxima": 25,
@@ -39,7 +39,7 @@ def test_ver_turma(client):
     })
     id_turma = criar.get_json()["id_turma"]
 
-    response = client.get(f"/turma/ver_uma/{id_turma}")
+    response = client.get(f"/turmas/ver/{id_turma}")
     assert response.status_code == 200
 
     data = response.get_json()
@@ -49,14 +49,14 @@ def test_ver_turma(client):
 
 def test_atualizar_turma(client):
     id_escola = criar_escola_base(client)
-    criar = client.post("/turma/criar", data = {
+    criar = client.post("/turmas/criar", data = {
         "nome": "Turma C",
         "serie": "3º Ano",
         "capacidade_maxima": 20,
         "id_escola": id_escola
     })
     id_turma = criar.get_json()["id_turma"]
-    response = client.put(f"/turma/atualizar/{id_turma}", data = {
+    response = client.put(f"/turmas/atualizar/{id_turma}", data = {
         "nome": "Turma C Atualizada",
         "serie": "4º Ano",
         "capacidade_maxima": 35,
@@ -71,7 +71,7 @@ def test_atualizar_turma(client):
 
 def test_deletar_turma(client):
     id_escola = criar_escola_base(client)
-    criar = client.post("/turma/criar", data = {
+    criar = client.post("/turmas/criar", data = {
         "nome": "Turma D",
         "serie": "5º Ano",
         "capacidade_maxima": 40,
@@ -79,22 +79,22 @@ def test_deletar_turma(client):
     })
     id_turma = criar.get_json()["id_turma"]
 
-    response = client.delete(f"/turma/deletar/{id_turma}")
+    response = client.delete(f"/turmas/deletar/{id_turma}")
     assert response.status_code == 200
     assert response.get_json()["mensagem"] == "Turma deletada com sucesso"
 
-    verificar = client.get(f"/turma/ver_uma/{id_turma}")
+    verificar = client.get(f"/turmas/ver/{id_turma}")
     assert verificar.status_code == 404
 
 def test_listar_turmas(client):
     id_escola = criar_escola_base(client)
-    client.post("/turma/criar", data = {
+    client.post("/turmas/criar", data = {
         "nome": "Turma E",
         "serie": "6º Ano",
         "capacidade_maxima": 28,
         "id_escola": id_escola
     })
-    response = client.get("/turma/ver")
+    response = client.get("/turmas/listar")
     assert response.status_code == 200
 
     data = response.get_json()
@@ -103,7 +103,7 @@ def test_listar_turmas(client):
 
 def test_turma_lotada(client):
     id_escola = criar_escola_base(client)
-    criar = client.post("/turma/criar", data = {
+    criar = client.post("/turmas/criar", data = {
         "nome": "Turma Pequena",
         "serie": "1º Ano",
         "capacidade_maxima": 1,
@@ -111,12 +111,12 @@ def test_turma_lotada(client):
     })
     id_turma = criar.get_json()["id_turma"]
     
-    client.post("/aluno/criar", data = {
+    client.post("/alunos/criar", data = {
         "nome": "Aluno 1",
         "idade": "15",
         "id_turma": str(id_turma)
     })
-    response = client.post("/aluno/criar", data = {
+    response = client.post("/alunos/criar", data = {
         "nome": "Aluno 2",
         "idade": "16",
         "id_turma": str(id_turma)
@@ -126,14 +126,14 @@ def test_turma_lotada(client):
 
 def test_libera_vaga_ao_deletar(client):
     id_turma = criar_aluno_base(client)
-    aluno = client.post("/aluno/criar", data = {
+    aluno = client.post("/alunos/criar", data = {
         "nome": "Aluno Teste",
         "idade": "15",
         "id_turma": str(id_turma)
     }).get_json()
-    client.delete(f"/aluno/deletar/{aluno['id_aluno']}")
+    client.delete(f"/alunos/deletar/{aluno['id_aluno']}")
 
-    response = client.post("/aluno/criar", data = {
+    response = client.post("/alunos/criar", data = {
         "nome": "Novo Aluno",
         "idade": "16",
         "id_turma": str(id_turma)
@@ -143,7 +143,7 @@ def test_libera_vaga_ao_deletar(client):
 def test_vagas_turma(client):
     id_turma = criar_aluno_base(client)
 
-    response = client.get(f"/turma/vagas_restantes/{id_turma}")
+    response = client.get(f"/turmas/vagas_restantes/{id_turma}")
     data = response.get_json()
 
     assert response.status_code == 200

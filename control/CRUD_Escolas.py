@@ -3,7 +3,7 @@ from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
 
-escola_bp = Blueprint('escola', __name__, url_prefix = '/escolas') 
+escola_bp = Blueprint('escolas', __name__, url_prefix = '/escolas') 
 
 @escola_bp.route('/criar', methods = ['POST'])
 def cadastrar():

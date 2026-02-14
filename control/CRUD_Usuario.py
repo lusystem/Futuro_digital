@@ -5,9 +5,9 @@ from flask_jwt_extended import jwt_required
 from conf.database import db
 from control import seguranca
 
-usuario_bp = Blueprint('usuario', __name__, url_prefix = '/usuarios')
+usuario_bp = Blueprint('usuarios', __name__, url_prefix = '/usuarios')
 
-@usuario_bp.route('/<int:id>', methods=['PUT'])
+@usuario_bp.route('/atualizar/<int:id>', methods=['PUT'])
 @jwt_required()
 def atualizar(id):
     nome_usuario = request.form.get('nome_usuario')
@@ -15,26 +15,30 @@ def atualizar(id):
     senha = request.form.get('senha')
     cargo = request.form.get('cargo')
     id_escola = request.form.get('id_escola')
-    
     senha_hash = seguranca.hash_senha(senha) if senha else None
-    
-    sql = text("""
-               UPDATE usuarios
-               SET nome_usuario = :nome_usuario,
-                   email = :email,
-                   senha = :senha,
-                   cargo = :cargo,
-                   id_escola = :id_escola
-               WHERE id_usuario = :id
-               """)
-    dados = {
-        'id': id,
-        'nome_usuario': nome_usuario,
-        'email': email,
-        'senha': senha_hash,
-        'cargo': cargo,
-        'id_escola': id_escola
-    }
+    updates = []
+    dados = {'id': id}
+
+    if nome_usuario:
+        updates.append("nome_usuario = :nome_usuario")
+        dados['nome_usuario'] = nome_usuario
+    if email:
+        updates.append("email = :email")
+        dados['email'] = email
+    if senha_hash:
+        updates.append("senha = :senha")
+        dados['senha'] = senha_hash
+    if cargo:
+        updates.append("cargo = :cargo")
+        dados['cargo'] = cargo
+    if id_escola:
+        updates.append("id_escola = :id_escola")
+        dados['id_escola'] = id_escola
+
+    if not updates:
+        return {'erro': 'Nenhum campo para atualizar.'}, 400
+
+    sql = text(f"UPDATE usuarios SET {', '.join(updates)} WHERE id_usuario = :id")
     try:
         db.session.execute(sql, dados)
         db.session.commit()
@@ -42,7 +46,7 @@ def atualizar(id):
     except Exception as e:
         return {'erro': str(e)}, 400
     
-@usuario_bp.route('/<int:id>', methods=['DELETE'])
+@usuario_bp.route('/deletar/<int:id>', methods=['DELETE'])
 @jwt_required()
 def deletar(id):
     sql = text("DELETE FROM usuarios WHERE id_usuario = :id")
@@ -56,7 +60,7 @@ def deletar(id):
     except Exception as e:
         return {'erro': str(e)}, 400
     
-@usuario_bp.route('/', methods=['GET'])
+@usuario_bp.route('/listar', methods=['GET'])
 @jwt_required()
 def listar():
     sql = text("""
@@ -79,7 +83,7 @@ def listar():
     except Exception as e:
         return {'erro': str(e)}, 400
     
-@usuario_bp.route('/<int:id>', methods=['GET'])
+@usuario_bp.route('/ver/<int:id>', methods=['GET'])
 @jwt_required()
 def ver(id):
     sql = text("""

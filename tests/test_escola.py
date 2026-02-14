@@ -1,5 +1,5 @@
 def test_criar_escola(client):
-    response = client.post("/escolas/", data={
+    response = client.post("/escolas/criar", data={
         "nome": "Escola Central",
         "endereco": "Rua Principal, 100",
         "tipo": "Publica",
@@ -19,7 +19,7 @@ def test_criar_escola(client):
     assert data["capacidade_alunos"] == 500
 
 def test_ver_escola(client):
-    criar_response = client.post("/escolas/", data={
+    criar_response = client.post("/escolas/criar", data={
         "nome": "Escola Teste",
         "endereco": "Rua Teste, 123",
         "tipo": "Privada",
@@ -29,7 +29,7 @@ def test_ver_escola(client):
     })
     escola_id = criar_response.get_json()["id_escola"]
 
-    ver_response = client.get(f"/escolas/{escola_id}")
+    ver_response = client.get(f"/escolas/ver/{escola_id}")
     assert ver_response.status_code == 200
 
     data = ver_response.get_json()
@@ -42,7 +42,7 @@ def test_ver_escola(client):
     assert data["capacidade_alunos"] == 300
 
 def test_atualizar_escola(client):
-    criar_response = client.post("/escolas/", data={
+    criar_response = client.post("/escolas/criar", data={
         "nome": "Escola Atualizada",
         "endereco": "Rua Atualizada, 789",
         "tipo": "Publica",
@@ -52,7 +52,7 @@ def test_atualizar_escola(client):
     })
     escola_id = criar_response.get_json()["id_escola"]
 
-    atualizar_response = client.put(f"/escolas/{escola_id}", data={
+    atualizar_response = client.put(f"/escolas/atualizar/{escola_id}", data={
         "nome": "Escola Atualizada Nova",
         "endereco": "Rua Atualizada Nova, 789",
         "tipo": "Privada",
@@ -71,7 +71,7 @@ def test_atualizar_escola(client):
     assert data["vagas"] == 300
     assert data["capacidade_alunos"] == 700
 
-    ver_response = client.get(f"/escolas/{escola_id}")
+    ver_response = client.get(f"/escolas/ver/{escola_id}")
     assert ver_response.status_code == 200
     
     ver_data = ver_response.get_json()
@@ -79,7 +79,7 @@ def test_atualizar_escola(client):
     assert ver_data["tipo"] == "Privada"
 
 def test_deletar_escola(client):
-    criar_response = client.post("/escolas/", data={
+    criar_response = client.post("/escolas/criar", data={
         "nome": "Escola a Deletar",
         "endereco": "Rua Deletar, 456",
         "tipo": "Publica",
@@ -95,12 +95,12 @@ def test_deletar_escola(client):
     data = deletar_response.get_json()
     assert data["mensagem"] == "Escola deletada com sucesso."
 
-    ver_response = client.get(f"/escolas/{escola_id}")
+    ver_response = client.get(f"/escolas/ver/{escola_id}")
     assert ver_response.status_code == 404
     assert ver_response.get_json()["erro"] == "Escola não encontrada."
 
 def test_listar_escolas(client):
-    client.post("/escolas/", data={
+    client.post("/escolas/criar", data={
         "nome": "Escola A",
         "endereco": "Rua A",
         "tipo": "Publica",
