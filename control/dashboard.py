@@ -2,11 +2,13 @@ from flask import Blueprint
 from sqlalchemy import text
 from conf.database import db
 from flask_jwt_extended import jwt_required, get_jwt
+from control.seguranca import admin_qualquer
 
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/dashboard')
 
 @dashboard_bp.route('/general', methods = ['GET'])
 @jwt_required()
+@admin_qualquer
 def dashboard_geral():
     claims = get_jwt()
     cargo = claims.get('cargo')

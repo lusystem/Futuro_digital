@@ -2,10 +2,23 @@ from flask import Flask, Blueprint, request, jsonify
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
+from flask_jwt_extended import jwt_required, get_jwt
+from control.seguranca import secretaria_apenas, admin_qualquer
 
 escola_bp = Blueprint('escolas', __name__, url_prefix = '/escolas') 
 
+def autorizar_escola(id_escola):
+    claims = get_jwt()
+    cargo = claims.get('cargo')
+    if cargo == 'admin_secretaria':
+        return None
+    if cargo == 'admin_escola' and claims.get('id_escola') == id_escola:
+        return None
+    return {'erro': 'Acesso não autorizado.'}, 403
+
 @escola_bp.route('/criar', methods = ['POST'])
+@jwt_required()
+@secretaria_apenas
 def cadastrar():
     nome = request.form.get('nome')
     endereco = request.form.get('endereco')
@@ -40,6 +53,8 @@ def cadastrar():
         return {'erro': str(e)}, 400
     
 @escola_bp.route('/atualizar/<int:id>', methods = ['PUT'])
+@jwt_required()
+@secretaria_apenas
 def atualizar(id):
     escola = db.session.execute(text("SELECT * FROM escolas WHERE id_escola = :id_escola"), {'id_escola': id}).fetchone()
     if not escola:
@@ -79,6 +94,8 @@ def atualizar(id):
         return {'erro': str(e)}, 400
 
 @escola_bp.route('/deletar/<int:id>', methods = ['DELETE'])
+@jwt_required()
+@secretaria_apenas
 def deletar(id):
     escola = db.session.execute(text("SELECT * FROM escolas WHERE id_escola = :id_escola"), {'id_escola': id}).fetchone()
     if not escola:
@@ -95,7 +112,12 @@ def deletar(id):
         return {'erro': str(e)}, 400
 
 @escola_bp.route('/ver/<int:id>', methods = ['GET'])
+@jwt_required()
+@admin_qualquer
 def ver(id):
+    auth = autorizar_escola(id)
+    if auth:
+        return auth
     sql = text("SELECT * FROM escolas WHERE id_escola = :id_escola")
     dados = {'id_escola': id}
     try:
@@ -110,17 +132,31 @@ def ver(id):
         return {'erro': str(e)}, 400
 
 @escola_bp.route('/listar', methods = ['GET'])
+@jwt_required()
+@admin_qualquer
 def listar():
-    sql = text("SELECT * FROM escolas")
+    claims = get_jwt()
+    cargo = claims.get('cargo')
+    if cargo == 'admin_escola':
+        sql = text("SELECT * FROM escolas WHERE id_escola = :id_escola")
+        params = {'id_escola': claims.get('id_escola')}
+    else:
+        sql = text("SELECT * FROM escolas")
+        params = {}
     try:
-        result = db.session.execute(sql)
+        result = db.session.execute(sql, params)
         escolas = [dict(row._mapping) for row in result.fetchall()]
         return jsonify(escolas), 200
     except Exception as e:
         return {'erro': str(e)}, 400
 
 @escola_bp.route('/<int:id>/vacancies', methods = ['GET'])
+@jwt_required()
+@admin_qualquer
 def calcular_vagas(id):
+    auth = autorizar_escola(id)
+    if auth:
+        return auth
     sql_escola = text("SELECT vagas, capacidade_alunos FROM escolas WHERE id_escola = :id_escola")
     try:
         result = db.session.execute(sql_escola, {'id_escola': id})

@@ -1,6 +1,6 @@
 from control import seguranca
 
-def criar_escola(client):
+def criar_escola(client, auth_headers):
     response = client.post("/escolas/criar", data = {
         "nome": "Escola Teste",
         "endereco": "Rua Teste",
@@ -8,12 +8,12 @@ def criar_escola(client):
         "quantidade_turmas": 10,
         "vagas": 100,
         "capacidade_alunos": 30
-    })
+    }, headers=auth_headers)
     assert response.status_code == 201
     return response.get_json()["id_escola"]
 
-def criar_usuario_base(client):
-    id_escola = criar_escola(client)
+def criar_usuario_base(client, auth_headers):
+    id_escola = criar_escola(client, auth_headers)
     response = client.post("/cadastro/", data = {
         "nome_usuario": "Usuário Teste",
         "email": "teste@email.com",
@@ -24,8 +24,8 @@ def criar_usuario_base(client):
     assert response.status_code == 201
     return response.get_json()
 
-def test_cadastro_usuario(client):
-    id_escola = criar_escola(client)
+def test_cadastro_usuario(client, auth_headers):
+    id_escola = criar_escola(client, auth_headers)
     response = client.post("/cadastro/", data = {
         "nome_usuario": "João",
         "email": "joao@email.com",
@@ -39,8 +39,8 @@ def test_cadastro_usuario(client):
     assert "id_usuario" in data
     assert data["email"] == "joao@email.com"
 
-def test_login_usuario(client):
-    criar_usuario_base(client)
+def test_login_usuario(client, auth_headers):
+    criar_usuario_base(client, auth_headers)
     response = client.post("/login/", data = {
         "email": "teste@email.com",
         "senha": "123456"
@@ -51,7 +51,7 @@ def test_login_usuario(client):
     assert "id_usuario" in data
     assert data["email"] == "teste@email.com"
 
-def test_login_usuario_invalido(client):
+def test_login_usuario_invalido(client, auth_headers):
     response = client.post("/login/", data = {
         "email": "",
         "senha": 'senhaa'
@@ -60,7 +60,7 @@ def test_login_usuario_invalido(client):
     data = response.get_json()
     assert "erro" in data
 
-def test_login_usuario_inexistente(client):
+def test_login_usuario_inexistente(client, auth_headers):
     response = client.post("/login/", data = {
         "email": "naoexiste@email.com",
         "senha": "123456"

@@ -3,11 +3,13 @@ from flask import Blueprint, request, jsonify
 from sqlalchemy import text
 from conf.database import db
 from flask_jwt_extended import jwt_required
+from control.seguranca import admin_qualquer
 
 staff_bp = Blueprint('staff', __name__, url_prefix='/staff')
 
 @staff_bp.route('/criar', methods = ['POST'])
 @jwt_required()
+@admin_qualquer
 def criar_staff():
     nome = request.form.get('nome')
     cargo = request.form.get('cargo')
@@ -47,6 +49,7 @@ def criar_staff():
 
 @staff_bp.route('/ver/<int:id>', methods = ['GET'])
 @jwt_required()
+@admin_qualquer
 def ver_staff(id):
     sql = text("SELECT * FROM staff WHERE id_staff = :id_staff")
     
@@ -64,6 +67,7 @@ def ver_staff(id):
 
 @staff_bp.route('/atualizar/<int:id>', methods = ['PUT'])
 @jwt_required()
+@admin_qualquer
 def atualizar_staff(id):
     sql_check = text("SELECT * FROM staff WHERE id_staff = :id_staff")
     result = db.session.execute(sql_check, {'id_staff': id})
@@ -119,6 +123,7 @@ def atualizar_staff(id):
 
 @staff_bp.route('/deletar/<int:id>', methods = ['DELETE'])
 @jwt_required()
+@admin_qualquer
 def deletar_staff(id):
     sql_check = text("SELECT * FROM staff WHERE id_staff = :id_staff")
     result = db.session.execute(sql_check, {'id_staff': id})
@@ -138,22 +143,27 @@ def deletar_staff(id):
 
 @staff_bp.route('/listar', methods = ['GET'])
 @jwt_required()
+@admin_qualquer
 def listar_staff():
+    role = request.args.get('role')
+    specialty = request.args.get('specialty')
     papel = request.args.get('papel')
     especialidade = request.args.get('especialidade')
     escola = request.args.get('escola')
     status = request.args.get('status')
+    cargo_filtro = role or papel
+    especialidade_filtro = specialty or especialidade
     
     sql = "SELECT * FROM staff WHERE 1=1"
     params = {}
     
-    if papel:
+    if cargo_filtro:
         sql += " AND cargo = :papel"
-        params['papel'] = papel
+        params['papel'] = cargo_filtro
     
-    if especialidade:
+    if especialidade_filtro:
         sql += " AND especialidade = :especialidade"
-        params['especialidade'] = especialidade
+        params['especialidade'] = especialidade_filtro
     
     if escola:
         sql += " AND id_escola = :escola"

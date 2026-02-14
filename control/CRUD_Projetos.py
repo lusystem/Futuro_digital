@@ -2,11 +2,13 @@ from flask import Blueprint, request, jsonify
 from sqlalchemy import text
 from conf.database import db
 from flask_jwt_extended import jwt_required
+from control.seguranca import admin_qualquer
 
 projetos_bp = Blueprint('projetos', __name__, url_prefix = '/projetos')
 
 @projetos_bp.route('/criar', methods = ['POST'])
 @jwt_required()
+@admin_qualquer
 def criar_projeto():
     nome = request.form.get('nome')
     data_inicio = request.form.get('data_inicio')
@@ -41,6 +43,7 @@ def criar_projeto():
 
 @projetos_bp.route('/ver/<int:id>', methods = ['GET'])
 @jwt_required()
+@admin_qualquer
 def ver_projeto(id):
     sql = text("SELECT * FROM projetos WHERE id_projeto = :id_projeto")
     
@@ -58,6 +61,7 @@ def ver_projeto(id):
 
 @projetos_bp.route('/atualizar/<int:id>', methods = ['PUT'])
 @jwt_required()
+@admin_qualquer
 def atualizar_projeto(id):
     sql_check = text("SELECT * FROM projetos WHERE id_projeto = :id_projeto")
     result = db.session.execute(sql_check, {'id_projeto': id})
@@ -104,6 +108,7 @@ def atualizar_projeto(id):
 
 @projetos_bp.route('/deletar/<int:id>', methods = ['DELETE'])
 @jwt_required()
+@admin_qualquer
 def deletar_projeto(id):
     sql_check = text("SELECT * FROM projetos WHERE id_projeto = :id_projeto")
     result = db.session.execute(sql_check, {'id_projeto': id})
@@ -123,9 +128,9 @@ def deletar_projeto(id):
 
 @projetos_bp.route('/listar', methods=['GET'])
 @jwt_required()
+@admin_qualquer
 def listar_projetos():
     sql = text("SELECT * FROM projetos")
-    
     try:
         result = db.session.execute(sql)
         projetos_list = [dict(row._mapping) for row in result.fetchall()]
@@ -136,6 +141,7 @@ def listar_projetos():
 
 @projetos_bp.route('/<int:id_projeto>/adicionar-professores', methods = ['POST'])
 @jwt_required()
+@admin_qualquer
 def adicionar_professor_projeto(id_projeto):
     id_staff = request.form.get('id_staff')
     
@@ -191,6 +197,7 @@ def adicionar_professor_projeto(id_projeto):
 
 @projetos_bp.route('/<int:id_projeto>/remover-professor/<int:id_staff>', methods = ['DELETE'])
 @jwt_required()
+@admin_qualquer
 def remover_professor_projeto(id_projeto, id_staff):
     sql_check = text("""
         SELECT * FROM projeto_professores 
@@ -215,6 +222,7 @@ def remover_professor_projeto(id_projeto, id_staff):
 
 @projetos_bp.route('/<int:id_projeto>/listar-professores', methods = ['GET'])
 @jwt_required()
+@admin_qualquer
 def listar_professores_projeto(id_projeto):
     sql = text("""
         SELECT s.* FROM staff s

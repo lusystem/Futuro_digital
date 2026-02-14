@@ -12,8 +12,8 @@ def verificar_senha(senha_digitada: str, senha_hash: str) -> bool:
     """Verifica se a senha digitada corresponde ao hash armazenado"""
     return hash_senha(senha_digitada) == senha_hash
 
-def admin_secretaria_required(fn):
-    """Decorador para proteger rotas que requerem admin_secretaria"""
+def secretaria_apenas(fn):
+    """Decorador para proteger rotas que exigem admin_secretaria"""
     @wraps(fn)
     def wrapper(*args, **kwargs):
         claims = get_jwt()
@@ -25,8 +25,8 @@ def admin_secretaria_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-def admin_escola_required(fn):
-    """Decorador para proteger rotas que requerem admin_escola"""
+def escola_apenas(fn):
+    """Decorador para proteger rotas que exigem admin_escola"""
     @wraps(fn)
     def wrapper(*args, **kwargs):
         claims = get_jwt()
@@ -38,8 +38,8 @@ def admin_escola_required(fn):
         return fn(*args, **kwargs)
     return wrapper
 
-def admin_any_required(fn):
-    """Decorador para rotas que requerem ser admin (qualquer tipo)"""
+def admin_qualquer(fn):
+    """Decorador para rotas que exigem ser admin (qualquer tipo)"""
     @wraps(fn)
     def wrapper(*args, **kwargs):
         claims = get_jwt()

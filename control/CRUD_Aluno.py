@@ -2,10 +2,28 @@ from flask import Flask, Blueprint, request, jsonify
 from sqlalchemy import text
 from flask_sqlalchemy import SQLAlchemy
 from conf.database import db
+from flask_jwt_extended import jwt_required, get_jwt
+from control.seguranca import admin_qualquer
 
 aluno_bp = Blueprint('alunos', __name__, url_prefix = '/alunos')
 
+def autorizar_escola(id_escola):
+    claims = get_jwt()
+    cargo = claims.get('cargo')
+    if cargo == 'admin_secretaria':
+        return None
+    if cargo == 'admin_escola' and claims.get('id_escola') == id_escola:
+        return None
+    return {'erro': 'Acesso não autorizado.'}, 403
+
+def obter_escola_por_turma(id_turma):
+    row = db.session.execute(
+        text("SELECT id_escola FROM turmas WHERE id_turma = :id_turma"), {'id_turma': id_turma}).fetchone()
+    return row.id_escola if row else None
+
 @aluno_bp.route('/criar', methods=['POST'])
+@jwt_required()
+@admin_qualquer
 def cadastrar(): 
     nome = request.form.get('nome')
     pcd = request.form.get('pcd') == 'true' #boolean no banco de dados
@@ -26,11 +44,15 @@ def cadastrar():
     except (ValueError, TypeError):
         return {'erro': 'idade deve ser um número inteiro.'}, 400
     
-    turma = db.session.execute(text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id_turma"),
-        {'id_turma': id_turma}).fetchone()
+    turma = db.session.execute(text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id_turma"), {'id_turma': id_turma}).fetchone()
 
     if not turma:
         return {'erro': 'Turma não encontrada.'}, 404
+
+    id_escola = obter_escola_por_turma(id_turma)
+    auth = autorizar_escola(id_escola)
+    if auth:
+        return auth
 
     sql_capacidade = text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id_turma")
     capacidade = db.session.execute(sql_capacidade, {'id_turma': id_turma}).fetchone()[0]
@@ -73,6 +95,8 @@ def cadastrar():
         return {'erro': str(e)}, 400
 
 @aluno_bp.route('/atualizar/<int:id>', methods=['PUT'])
+@jwt_required()
+@admin_qualquer
 def atualizar(id):
     nome = request.form.get('nome')
     pcd = request.form.get('pcd') == 'true'  #boolean no banco de dados
@@ -89,6 +113,11 @@ def atualizar(id):
         id_turma = int(id_turma) if id_turma else aluno.id_turma
     except (ValueError, TypeError):
         return {'erro': 'idade e id_turma devem ser números'}, 400
+
+    id_escola = obter_escola_por_turma(id_turma)
+    auth = autorizar_escola(id_escola)
+    if auth:
+        return auth
     
     capacidade = db.session.execute(text("SELECT capacidade_maxima FROM turmas WHERE id_turma = :id"), {'id': id_turma}).scalar()
 
@@ -135,7 +164,18 @@ def atualizar(id):
         return {'erro': str(e)}, 400
 
 @aluno_bp.route('/deletar/<int:id>', methods=['DELETE'])
+@jwt_required()
+@admin_qualquer
 def deletar(id):
+    aluno = db.session.execute(text("SELECT id_turma FROM alunos WHERE id_aluno = :id"), {'id': id}).fetchone()
+    if not aluno:
+        return {'erro': 'Aluno não encontrado.'}, 404
+
+    id_escola = obter_escola_por_turma(aluno.id_turma)
+    auth = autorizar_escola(id_escola)
+    if auth:
+        return auth
+
     sql = text("DELETE FROM alunos WHERE id_aluno = :id")
     dados = {'id': id}
     try:
@@ -147,6 +187,8 @@ def deletar(id):
         return {'erro': str(e)}, 400
 
 @aluno_bp.route('/ver/<int:id>', methods=['GET'])
+@jwt_required()
+@admin_qualquer
 def ver(id):
     sql = text("SELECT * FROM alunos WHERE id_aluno = :id")
     dados = {'id': id}
@@ -154,6 +196,10 @@ def ver(id):
         result = db.session.execute(sql, dados)
         aluno = result.fetchone()
         if aluno:
+            id_escola = obter_escola_por_turma(aluno[5])
+            auth = autorizar_escola(id_escola)
+            if auth:
+                return auth
             aluno_dict = {
                 'id_aluno': aluno[0],
                 'nome': aluno[1],
@@ -169,10 +215,24 @@ def ver(id):
         return {'erro': str(e)}, 400
     
 @aluno_bp.route('/listar', methods=['GET'])
+@jwt_required()
+@admin_qualquer
 def listar():
-    sql = text("SELECT * FROM alunos")
     try:
-        result = db.session.execute(sql)
+        claims = get_jwt()
+        cargo = claims.get('cargo')
+        if cargo == 'admin_escola':
+            result = db.session.execute(
+                text("""
+                    SELECT a.*
+                    FROM alunos a
+                    JOIN turmas t ON a.id_turma = t.id_turma
+                    WHERE t.id_escola = :id_escola
+                """),
+                {'id_escola': claims.get('id_escola')}
+            )
+        else:
+            result = db.session.execute(text("SELECT * FROM alunos"))
         alunos = result.fetchall()
         alunos_list = []
         for aluno in alunos:

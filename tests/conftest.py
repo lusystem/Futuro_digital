@@ -2,7 +2,6 @@
 import sys
 import os
 import pytest
-
 os.environ["PYTHONUTF8"] = "1"
 
 #Garante que o diretório raiz do projeto seja incluído no sys.path
@@ -120,3 +119,22 @@ def client():
         db.session.execute(text("TRUNCATE TABLE projetos RESTART IDENTITY CASCADE"))
         db.session.commit()
         db.session.remove()
+
+@pytest.fixture
+def auth_headers(client):
+    cadastro = client.post("/cadastro/", data={
+        "nome_usuario": "Admin Secretaria",
+        "email": "admin_secretaria@email.com",
+        "senha": "123456",
+        "cargo": "admin_secretaria",
+        "id_escola": None
+    })
+    assert cadastro.status_code == 201
+
+    login = client.post("/login/", data={
+        "email": "admin_secretaria@email.com",
+        "senha": "123456"
+    })
+    assert login.status_code == 200
+    token = login.get_json()["access_token"]
+    return {"Authorization": f"Bearer {token}"}
